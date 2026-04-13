@@ -35,9 +35,7 @@ export default function HeroSection({ mode }: { mode: string }) {
         .select('key, value')
         .eq('mode', mode)
         .eq('section', 'hero');
-      if (data) {
-        setContents(data);
-      }
+      if (data) setContents(data);
     }
     fetchContents();
   }, [mode]);
@@ -53,7 +51,7 @@ export default function HeroSection({ mode }: { mode: string }) {
   const btnLabel = getVal(contents, 'btn_label', '수강 문의하기');
 
   const bgColor  = isAni ? '#FF1659' : '#292929';
-  const btnColor = isAni ? '#FF1659' : '#515883'; // ← 모드별 버튼 텍스트 색상
+  const btnColor = isAni ? '#FF1659' : '#515883';
   const charImg  = `${IMG_BASE}/hero_img_${isAni ? 'ani' : 'fine'}.png`;
 
   type FadeItem = {
@@ -76,10 +74,11 @@ export default function HeroSection({ mode }: { mode: string }) {
       style={{
         backgroundColor: bgColor,
         transition: 'background-color 0.5s ease',
-        height: '560px',
+        height: 'clamp(400px, 29vw, 680px)',
         overflow: 'hidden',
+        position: 'relative',
+        width: '100%',
       }}
-      className="relative w-full"
     >
       <style>{`
         @keyframes float {
@@ -90,14 +89,32 @@ export default function HeroSection({ mode }: { mode: string }) {
         .char-float {
           animation: float 3.5s ease-in-out infinite;
         }
+        @media (max-width: 1024px) {
+          .hero-title { font-size: 28px !important; }
+          .hero-desc  { font-size: 13px !important; }
+        }
+        @media (max-width: 767px) {
+          .hero-char  { display: none !important; }
+          .hero-text  { width: 100% !important; }
+          .hero-title { font-size: 26px !important; }
+          .hero-desc  { font-size: 13px !important; }
+        }
       `}</style>
 
-      <div className="max-w-[1440px] mx-auto px-16 h-full flex relative">
+      <div
+        className="h-full flex relative"
+        style={{ maxWidth: '1920px', margin: '0 auto', padding: '0 4vw' }}
+      >
 
         {/* 왼쪽 텍스트 */}
         <div
-          className="flex flex-col gap-4 w-1/2 z-10 justify-center"
-          style={{ paddingBottom: '40px', paddingTop: '20px' }}
+          className="hero-text flex flex-col z-10 justify-center"
+          style={{
+            width: '50%',
+            gap: 'clamp(8px, 1vw, 16px)',
+            paddingBottom: 'clamp(20px, 3vw, 50px)',
+            paddingTop: 'clamp(10px, 1.5vw, 25px)',
+          }}
         >
           {fadeItems.map((item, i) => (
             <div
@@ -111,15 +128,14 @@ export default function HeroSection({ mode }: { mode: string }) {
               {item.isBtn && (
                 <button
                   type="button"
-                  className="mt-4 bg-white rounded-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-sm cursor-pointer"
+                  className="bg-white rounded-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-sm cursor-pointer"
                   style={{
                     fontFamily: "'Pretendard', sans-serif",
                     fontWeight: 700,
-                    paddingTop: '14px',
-                    paddingBottom: '14px',
-                    paddingLeft: '28px',
-                    paddingRight: '28px',
-                    color: btnColor, // ← 애니: #FF1659 / 회화: #515883
+                    marginTop: 'clamp(4px, 0.8vw, 12px)',
+                    padding: 'clamp(10px, 0.8vw, 14px) clamp(18px, 1.5vw, 28px)',
+                    color: btnColor,
+                    fontSize: 'clamp(13px, 0.85vw, 16px)',
                   }}
                 >
                   {item.content}
@@ -127,16 +143,22 @@ export default function HeroSection({ mode }: { mode: string }) {
               )}
               {!item.isBtn && item.isTitle && (
                 <h1
-                  className="font-black text-white leading-snug whitespace-pre-line"
-                  style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '40px' }}
+                  className="hero-title font-black text-white leading-snug whitespace-pre-line"
+                  style={{
+                    fontFamily: "'Pretendard', sans-serif",
+                    fontSize: 'clamp(24px, 2.1vw, 44px)',
+                  }}
                 >
                   {item.content}
                 </h1>
               )}
               {!item.isBtn && !item.isTitle && (
                 <p
-                  className="text-white/80 leading-relaxed"
-                  style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '15px' }}
+                  className="hero-desc text-white/80 leading-relaxed"
+                  style={{
+                    fontFamily: "'Pretendard', sans-serif",
+                    fontSize: 'clamp(12px, 0.8vw, 16px)',
+                  }}
                 >
                   {item.content}
                 </p>
@@ -145,14 +167,19 @@ export default function HeroSection({ mode }: { mode: string }) {
           ))}
         </div>
 
-        {/* 오른쪽 캐릭터 */}
+        {/* 오른쪽 캐릭터
+            - bottom: -10px 으로 살짝 내려서 둥실 애니메이션 여유 확보
+            - 섹션 overflow:hidden 이 위아래 삐져나온 부분 처리 */}
         <div
-          className="absolute pointer-events-none flex items-end justify-end"
+          className="hero-char absolute pointer-events-none"
           style={{
-            right: '-20px',
-            bottom: '-10px',
-            width: '60%',
-            height: '126%',
+            right: 0,
+            bottom: '-10px', // ← 살짝 내려서 떠오를 때 빈 공간 방지
+            width: '45%',
+            height: '110%',  // ← 여유 높이 확보
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'flex-end',
           }}
         >
           <div className="char-float w-full h-full flex items-end justify-end">
