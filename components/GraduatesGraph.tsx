@@ -40,7 +40,7 @@ const LABELS = {
   employ: '임용',
 };
 
-const ROW_H = 16; // ← 20px에서 4px 줄임 (상하 2px씩)
+const ROW_H = 12; // ← 20px에서 4px 줄임 (상하 2px씩)
 
 function maskName(name: string): string {
   const len = name.length;
@@ -100,7 +100,7 @@ export default function GraduatesGraph() {
   const layerOrder: (keyof typeof COLORS)[] = ['employ', 'high', 'fine', 'ani'];
 
   return (
-    <section ref={sectionRef} className="w-full bg-white py-16">
+    <section ref={sectionRef} className="w-full bg-white pt-16 pb-6">
       <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 4vw' }}>
 
         {/* 제목 */}
@@ -209,8 +209,8 @@ export default function GraduatesGraph() {
                                 <span
                                   style={{
                                     fontFamily: "'Pretendard', sans-serif",
-                                    fontSize: '8px',
-                                    fontWeight: 400,
+                                    fontSize: '7px',
+                                    fontWeight: 200,
                                     color: TEXT_COLORS[cat],
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
@@ -226,8 +226,8 @@ export default function GraduatesGraph() {
                                 <span
                                   style={{
                                     fontFamily: "'Pretendard', sans-serif",
-                                    fontSize: '8px',
-                                    fontWeight: 500,
+                                    fontSize: '7px',
+                                    fontWeight: 200,
                                     color: TEXT_COLORS[cat],
                                     whiteSpace: 'nowrap',
                                     flexShrink: 0,
@@ -252,7 +252,7 @@ export default function GraduatesGraph() {
                 display: 'flex',
                 gap: '4px',
                 width: '100%',
-                marginTop: '6px',
+                marginTop: '4px',
               }}
             >
               {data.map((yearData, colIdx) => (

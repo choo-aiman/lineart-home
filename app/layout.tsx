@@ -1,41 +1,32 @@
-import type { Metadata } from "next";
-import { Black_Han_Sans } from "next/font/google";
-import "./globals.css";
+// layout.tsx에 Footer 컴포넌트 추가 + viewport 스케일 0.9 적용
+// 이유: 푸터 전역 삽입 + 브라우저 기본 비율을 110% 느낌으로 조정
 
-// Black Han Sans — 학원 이름 로고에 사용
-const blackHanSans = Black_Han_Sans({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-black-han-sans",
-});
+import type { Metadata } from "next";
+import "./globals.css";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "라인아트 미술학원",
-  description: "전북 전주 만화·애니 & 회화 입시 전문 미술학원",
+  description: "전북 전주 만화·애니메이션 전문 입시 미술학원",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="ko"
-      className={`${blackHanSans.variable} h-full antialiased`}
-    >
+    <html lang="ko">
       <head>
-        {/* Pretendard — Bold(700)와 Medium(500)으로 사용 */}
+        <meta name="viewport" content="width=device-width, initial-scale=0.9" />
         <link
+          href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Pretendard:wght@400;500;600;700&display=swap"
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"
         />
       </head>
-      <body
-        className="min-h-full flex flex-col"
-        style={{ fontFamily: "'Pretendard', sans-serif", fontWeight: 500 }}
-      >
+      <body>
         {children}
+        <Footer />
       </body>
     </html>
   );

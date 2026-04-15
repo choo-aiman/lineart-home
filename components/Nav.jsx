@@ -1,23 +1,33 @@
+// Nav 수정
+// 이유: 학원소개 클릭 시 /about 페이지로 이동, 나머지는 스크롤 이동 유지
+
 'use client'
 
-import { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 
 const menus = ['학원소개', '수업안내', '갤러리', '문의', '블로그']
 
-export default function Nav({ mode, setMode }) {
-  const [activeMenu, setActiveMenu] = useState(null)
+const menuPaths = {
+  '학원소개': '/about',
+  '수업안내': '/lessons',
+  '갤러리': '/gallery',
+  '문의': '/contact',
+  '블로그': '/blog',
+}
 
+export default function Nav({ mode, setMode }) {
+  const router = useRouter()
+  const pathname = usePathname()
   const isAni = mode === 'ani'
   const bgColor = isAni ? '#FF1659' : '#292929'
   const activeTextColor = isAni ? '#FF1659' : '#292929'
 
+  const activeMenu = Object.entries(menuPaths).find(([, path]) => pathname === path)?.[0] ?? null
+
   const handleMenuClick = (menu) => {
-    setActiveMenu(menu)
-    const section = document.getElementById(menu)
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
+    const path = menuPaths[menu];
+    if (path) router.push(`${path}?mode=${mode}`);
+  };
 
   return (
     <nav style={{
@@ -33,15 +43,15 @@ export default function Nav({ mode, setMode }) {
       transition: 'background-color 0.3s',
     }}>
 
-      {/* 로고 — Black Han Sans는 layout.tsx에서 등록한 CSS 변수로 적용 */}
+      {/* 로고 */}
       <button
-        onClick={() => { setActiveMenu(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        onClick={() => router.push(`/?mode=${mode}`)}
         style={{
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          fontFamily: 'var(--font-black-han-sans)',
-          fontSize: '20px',
+          fontFamily: "'Black Han Sans', sans-serif",
+          fontSize: '24px',
           color: '#ffffff',
           whiteSpace: 'nowrap',
         }}
@@ -49,7 +59,7 @@ export default function Nav({ mode, setMode }) {
         라인아트 미술학원
       </button>
 
-      {/* 메뉴 — 기본 Medium(500), 활성 Bold(700) */}
+      {/* 메뉴 */}
       <div style={{ display: 'flex', gap: '40px', alignItems: 'center' }}>
         {menus.map((menu) => (
           <button
@@ -74,7 +84,7 @@ export default function Nav({ mode, setMode }) {
         ))}
       </div>
 
-      {/* 모드 토글 — Bold(700) */}
+      {/* 모드 토글 */}
       <div style={{
         display: 'flex',
         background: 'rgba(0,0,0,0.25)',
