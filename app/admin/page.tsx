@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminDesign from '@/components/admin/AdminDesign';
+import AdminLessons from '@/components/admin/AdminLessons';
+import AdminBlog from '@/components/admin/AdminBlog';
 
 interface AdminUser {
   id: number;
@@ -286,7 +288,7 @@ export default function AdminPage() {
           <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>소개 디자인 편집 — 구현 중...</p>
         )}
         {activeTab === 'lessons' && (
-          <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>수업안내 관리 — 구현 중...</p>
+         <AdminLessons />
         )}
         {activeTab === 'gallery' && (
           <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>갤러리 관리 — 구현 중...</p>
@@ -295,7 +297,7 @@ export default function AdminPage() {
           <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>문의·게시판 관리 — 구현 중...</p>
         )}
         {activeTab === 'blog' && (
-          <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>블로그 관리 — 구현 중...</p>
+          <AdminBlog />
         )}
         {activeTab === 'graduates' && (
           <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>합격자 관리 — 구현 중...</p>

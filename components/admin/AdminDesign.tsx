@@ -6,6 +6,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import AdminAboutSlides from '@/components/admin/AdminAboutSlides';
+import AdminInstructors from '@/components/admin/AdminInstructors';
+import AdminFacilities from '@/components/admin/AdminFacilities';
 
 type Mode = 'ani' | 'fine';
 
@@ -555,11 +557,14 @@ export default function AdminDesign() {
   <AdminAboutSlides mode={mode} />
 </div>
 
-{/* 이후 섹션들 구현 예정 */}
-<div style={{ ...sectionBox, opacity: 0.4 }}>
-  <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888', textAlign: 'center' }}>
-    강사진, 시설 등 — 구현 예정
-  </p>
+{/* ── 강사진 + 해시태그 ── */}
+<div style={sectionBox}>
+  <AdminInstructors mode={mode} />
+</div>
+
+{/* ── 시설 안내 ── */}
+<div style={sectionBox}>
+  <AdminFacilities mode={mode} />
 </div>
     </div>
   );

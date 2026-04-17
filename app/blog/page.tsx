@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import BlogSection from '@/components/BlogSection';
 import BlogBanner from '@/components/BlogBanner';
+import AdminLessons from '@/components/admin/AdminLessons';
 
 export default function BlogPage() {
   const searchParams = useSearchParams();
