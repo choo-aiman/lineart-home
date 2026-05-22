@@ -44,13 +44,17 @@ export default function HeroSection({ mode }: { mode: string }) {
     fetchContents();
   }, [mode]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const [atBottom, setAtBottom] = useState(false);
+
+useEffect(() => {
+  const handleScroll = () => {
+    setScrolled(window.scrollY > 50);
+    const isBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 50;
+    setAtBottom(isBottom);
+  };
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
 
   const title = getVal(
     contents, 'title',
@@ -226,33 +230,22 @@ export default function HeroSection({ mode }: { mode: string }) {
 
       {/* 스크롤 유도 화살표 — 10px 아래로 이동 */}
       <div
-        className="scroll-arrow fixed left-1/2"
-        style={{
-          bottom: '18px',
-          zIndex: 50,
-          opacity: scrolled ? 0 : 1,
-          transition: 'opacity 0.4s ease',
-          pointerEvents: 'none',
-        }}
-      >
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 32 32"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <polyline
-            points="6,10 16,22 26,10"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-            opacity="0.85"
-          />
-        </svg>
-      </div>
+  className="scroll-arrow fixed left-1/2"
+  onClick={() => atBottom ? window.scrollTo({ top: 0, behavior: 'smooth' }) : window.scrollBy({ top: window.innerHeight, behavior: 'smooth' })}
+  style={{
+    bottom: '18px',
+    zIndex: 50,
+    opacity: scrolled && !atBottom ? 0 : 1,
+    transition: 'opacity 0.4s ease, transform 0.4s ease',
+    pointerEvents: atBottom ? 'auto' : 'none',
+    transform: atBottom ? 'translateX(-50%) rotate(180deg)' : 'translateX(-50%) rotate(0deg)',
+    cursor: atBottom ? 'pointer' : 'default',
+  }}
+>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="6,10 16,22 26,10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.85"/>
+  </svg>
+</div>
     </>
   );
 }
