@@ -97,12 +97,19 @@ useEffect(() => {
           animation: float 3.5s ease-in-out infinite;
         }
         @keyframes bounce-arrow {
-          0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 1; }
-          50%       { transform: translateX(-50%) translateY(8px); opacity: 0.6; }
-        }
-        .scroll-arrow {
-          animation: bounce-arrow 1.4s ease-in-out infinite;
-        }
+  0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 1; }
+  50%       { transform: translateX(-50%) translateY(8px); opacity: 0.6; }
+}
+@keyframes bounce-arrow-up {
+  0%, 100% { transform: translateX(-50%) rotate(180deg) translateY(0px); opacity: 1; }
+  50%       { transform: translateX(-50%) rotate(180deg) translateY(8px); opacity: 0.6; }
+}
+.scroll-arrow {
+  animation: bounce-arrow 1.4s ease-in-out infinite;
+}
+.scroll-arrow-up {
+  animation: bounce-arrow-up 1.4s ease-in-out infinite;
+}
         @media (max-width: 1024px) {
           .hero-title { font-size: 28px !important; }
           .hero-desc  { font-size: 13px !important; }
@@ -230,7 +237,7 @@ useEffect(() => {
 
       {/* 스크롤 유도 화살표 — 10px 아래로 이동 */}
       <div
-  className="scroll-arrow fixed left-1/2"
+  className={`${atBottom ? 'scroll-arrow-up' : 'scroll-arrow'} fixed left-1/2`}
   onClick={() => atBottom ? window.scrollTo({ top: 0, behavior: 'smooth' }) : window.scrollBy({ top: window.innerHeight, behavior: 'smooth' })}
   style={{
     bottom: '18px',
@@ -238,7 +245,6 @@ useEffect(() => {
     opacity: scrolled && !atBottom ? 0 : 1,
     transition: 'opacity 0.4s ease, transform 0.4s ease',
     pointerEvents: atBottom ? 'auto' : 'none',
-    transform: atBottom ? 'translateX(-50%) rotate(180deg)' : 'translateX(-50%) rotate(0deg)',
     cursor: atBottom ? 'pointer' : 'default',
   }}
 >
