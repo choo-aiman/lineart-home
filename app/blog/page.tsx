@@ -1,16 +1,12 @@
-// app/blog/page.tsx 생성
-// 이유: 블로그 전용 페이지
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import BlogSection from '@/components/BlogSection';
 import BlogBanner from '@/components/BlogBanner';
-import AdminLessons from '@/components/admin/AdminLessons';
 
-export default function BlogPage() {
+function BlogContent() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState('ani');
 
@@ -27,8 +23,16 @@ export default function BlogPage() {
   return (
     <main>
       <Nav mode={mode} setMode={handleSetMode} />
-      <BlogSection mode={mode} />
       <BlogBanner mode={mode} />
+      <BlogSection mode={mode} />
     </main>
+  );
+}
+
+export default function BlogPage() {
+  return (
+    <Suspense>
+      <BlogContent />
+    </Suspense>
   );
 }

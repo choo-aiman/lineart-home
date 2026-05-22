@@ -1,16 +1,13 @@
-// about/page.tsx 수정
-// 이유: URL mode 파라미터로 새로고침 시 mode 유지
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import AboutSlideSection from '@/components/AboutSlideSection';
 import InstructorSection from '@/components/InstructorSection';
 import FacilitySection from '@/components/FacilitySection';
 
-export default function AboutPage() {
+function AboutContent() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState('ani');
 
@@ -31,5 +28,13 @@ export default function AboutPage() {
       <InstructorSection mode={mode} />
       <FacilitySection mode={mode} />
     </main>
+  );
+}
+
+export default function AboutPage() {
+  return (
+    <Suspense>
+      <AboutContent />
+    </Suspense>
   );
 }
