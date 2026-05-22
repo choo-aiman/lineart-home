@@ -106,11 +106,11 @@ export default function AboutSlideSection({ mode }: { mode: string }) {
               {slide.title}
             </h3>
             <p
-              className="text-[#444] mb-5 leading-relaxed"
-              style={{ fontFamily: "'Pretendard', sans-serif", fontSize: 'clamp(13px, 0.85vw, 15px)' }}
-            >
-              {slide.body}
-            </p>
+  className="text-[#444] mb-5 leading-relaxed"
+  style={{ fontFamily: "'Pretendard', sans-serif", fontSize: 'clamp(13px, 0.85vw, 15px)', whiteSpace: 'pre-line' }}
+>
+  {slide.body.replace(/\\n/g, '\n')}
+</p>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {listItems.map((item, i) => (
                 <li
