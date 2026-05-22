@@ -1,9 +1,6 @@
-// page.tsx 수정
-// 이유: URL의 mode 파라미터 읽어서 애니/회화 초기값 설정
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import HeroSection from '@/components/HeroSection';
@@ -11,7 +8,7 @@ import ClassCards from '@/components/ClassCards';
 import StatsBanner from '@/components/StatsBanner';
 import GraduatesGraph from '@/components/GraduatesGraph';
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState('ani');
 
@@ -28,5 +25,13 @@ export default function Home() {
       <StatsBanner mode={mode} />
       <GraduatesGraph />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   );
 }
