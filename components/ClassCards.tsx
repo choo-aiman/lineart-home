@@ -154,6 +154,7 @@ export default function ClassCards({ mode }: { mode: string }) {
                 {/* 자세히 보기 버튼 */}
                 <button
                   type="button"
+                  onClick={() => window.location.href = `/lessons?mode=${mode}`}
                   className="mt-2 w-fit px-5 py-2 rounded-lg border font-bold hover:scale-105 transition-all duration-200"
                   style={{
                     borderColor: mainColor,

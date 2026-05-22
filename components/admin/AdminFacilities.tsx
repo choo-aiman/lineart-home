@@ -37,10 +37,17 @@ function FacilityImageUploader({
     if (!file.type.startsWith('image/')) return;
     setUploading(true);
     const fileName = `facility_${facilityId}.jpg`;
+  
+    // remove 실패해도 무시하고 upsert로 업로드
     await supabase.storage.from('images').remove([fileName]);
+  
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { contentType: file.type });
+      .upload(fileName, file, { 
+        contentType: file.type,
+        upsert: true  // ← 이미 있으면 덮어쓰기
+      });
+  
     if (error) {
       alert('업로드 실패: ' + error.message);
       setUploading(false);

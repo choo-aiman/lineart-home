@@ -148,6 +148,7 @@ export default function HeroSection({ mode }: { mode: string }) {
                 {item.isBtn && (
                   <button
                     type="button"
+                    onClick={() => window.location.href = `/contact?mode=${mode}`}
                     className="bg-white rounded-xl font-bold hover:bg-gray-100 hover:scale-105 transition-all duration-200 shadow-sm cursor-pointer"
                     style={{
                       fontFamily: "'Pretendard', sans-serif",
