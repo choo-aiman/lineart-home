@@ -9,6 +9,7 @@ interface Graduate {
   student_name: string;
   university: string;
   department: string;
+  order: number | null;
 }
 
 interface YearData {
@@ -58,9 +59,12 @@ export default function GraduatesGraph() {
   useEffect(() => {
     async function fetchData() {
       const { data: rows } = await supabase
-        .from('graduates')
-        .select('year, category, student_name, university, department')
-        .order('year');
+  .from('graduates')
+  .select('year, category, student_name, university, department, order')
+  .order('year')
+  .order('category')
+  .order('order', { ascending: true, nullsFirst: false })
+  .order('id');
       if (!rows) return;
 
       const yearMap: Record<number, YearData> = {};
