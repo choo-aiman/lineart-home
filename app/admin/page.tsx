@@ -1,5 +1,5 @@
 'use client';
-
+import AdminGraduates from '@/components/admin/AdminGraduates';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -184,8 +184,8 @@ export default function AdminPage() {
         {activeTab === 'board' && <AdminContact />}
         {activeTab === 'blog' && <AdminBlog />}
         {activeTab === 'graduates' && (
-          <p style={{ fontFamily: "'Pretendard', sans-serif", color: '#888' }}>합격자 관리 — 구현 중...</p>
-        )}
+  <AdminGraduates />
+)}
       </div>
     </div>
   );
