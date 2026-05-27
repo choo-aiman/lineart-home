@@ -1,5 +1,5 @@
 // AdminGraduates 수정
-// 이유: 드래그앤드롭 순서 변경 추가
+// 이유: category 값 high/employ로 수정 + 고입/임용 탭 추가
 
 'use client';
 
@@ -23,13 +23,13 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type Mode = 'ani' | 'fine';
-type Category = 'ani' | 'fine' | '고입' | '임용';
+type Mode = 'ani' | 'fine' | 'high' | 'employ';
+type Category = 'ani' | 'fine' | 'high' | 'employ';
 
 interface Graduate {
   id: number;
   year: number;
-  mode: Mode;
+  mode: string;
   category: Category;
   student_name: string;
   university: string;
@@ -46,18 +46,25 @@ function maskName(name: string): string {
 }
 
 const categoryColors: Record<string, { bg: string; color: string }> = {
-  ani:  { bg: '#FFF0F4', color: '#993556' },
-  fine: { bg: '#ECEEF5', color: '#3C3489' },
-  '고입': { bg: '#FFF8E1', color: '#854F0B' },
-  '임용': { bg: '#E8F5E9', color: '#27500A' },
+  ani:    { bg: '#FFF0F4', color: '#993556' },
+  fine:   { bg: '#ECEEF5', color: '#3C3489' },
+  high:   { bg: '#FFF8E1', color: '#854F0B' },
+  employ: { bg: '#E8F5E9', color: '#27500A' },
 };
 
 const categoryLabels: Record<string, string> = {
-  ani: '만화·애니',
-  fine: '회화',
-  '고입': '고입',
-  '임용': '임용',
+  ani:    '만화·애니',
+  fine:   '회화',
+  high:   '고입',
+  employ: '임용',
 };
+
+const TAB_LIST = [
+  { key: 'ani',    label: '만화·애니', color: '#FF1659' },
+  { key: 'fine',   label: '회화',      color: '#515883' },
+  { key: 'high',   label: '고입',      color: '#F59E0B' },
+  { key: 'employ', label: '임용',      color: '#4CAF50' },
+] as const;
 
 function DragHandle() {
   return (
@@ -70,13 +77,7 @@ function DragHandle() {
 }
 
 function SortableRow({
-  graduate,
-  mainColor,
-  saving,
-  saved,
-  onUpdate,
-  onSave,
-  onDelete,
+  graduate, mainColor, saving, saved, onUpdate, onSave, onDelete,
 }: {
   graduate: Graduate;
   mainColor: string;
@@ -96,30 +97,19 @@ function SortableRow({
   };
 
   const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '6px 8px',
-    border: '1px solid #E0E0E0',
-    borderRadius: '6px',
-    fontFamily: "'Pretendard', sans-serif",
-    fontSize: '13px',
-    color: '#1A1A1A',
-    outline: 'none',
-    boxSizing: 'border-box',
-    backgroundColor: '#ffffff',
+    width: '100%', padding: '6px 8px', border: '1px solid #E0E0E0', borderRadius: '6px',
+    fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#1A1A1A',
+    outline: 'none', boxSizing: 'border-box', backgroundColor: '#ffffff',
   };
 
   const tdStyle: React.CSSProperties = {
-    padding: '6px 8px',
-    borderBottom: '1px solid #F0F0F0',
-    verticalAlign: 'middle',
+    padding: '6px 8px', borderBottom: '1px solid #F0F0F0', verticalAlign: 'middle',
   };
 
   return (
     <tr ref={setNodeRef} style={style}>
       <td style={{ ...tdStyle, width: '36px', textAlign: 'center' }}>
-        <div {...attributes} {...listeners}>
-          <DragHandle />
-        </div>
+        <div {...attributes} {...listeners}><DragHandle /></div>
       </td>
       <td style={tdStyle}>
         <input type="text" value={graduate.student_name} onChange={(e) => onUpdate(graduate.id, 'student_name', e.target.value)} style={inputStyle} />
@@ -131,12 +121,14 @@ function SortableRow({
         <input type="text" value={graduate.department} onChange={(e) => onUpdate(graduate.id, 'department', e.target.value)} style={inputStyle} />
       </td>
       <td style={{ ...tdStyle, textAlign: 'center', width: '60px' }}>
-        <button onClick={() => onSave(graduate)} disabled={saving === graduate.id} style={{ padding: '5px 10px', backgroundColor: saved === graduate.id ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '6px', fontFamily: "'Pretendard', sans-serif", fontSize: '11px', fontWeight: 700, cursor: saving === graduate.id ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s', whiteSpace: 'nowrap' }}>
+        <button onClick={() => onSave(graduate)} disabled={saving === graduate.id}
+          style={{ padding: '5px 10px', backgroundColor: saved === graduate.id ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '6px', fontFamily: "'Pretendard', sans-serif", fontSize: '11px', fontWeight: 700, cursor: saving === graduate.id ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s', whiteSpace: 'nowrap' }}>
           {saving === graduate.id ? '...' : saved === graduate.id ? '✓' : '저장'}
         </button>
       </td>
       <td style={{ ...tdStyle, textAlign: 'center', width: '50px' }}>
-        <button onClick={() => onDelete(graduate.id)} style={{ padding: '5px 10px', backgroundColor: 'transparent', color: '#FF1659', border: '1px solid #FF1659', borderRadius: '6px', fontFamily: "'Pretendard', sans-serif", fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <button onClick={() => onDelete(graduate.id)}
+          style={{ padding: '5px 10px', backgroundColor: 'transparent', color: '#FF1659', border: '1px solid #FF1659', borderRadius: '6px', fontFamily: "'Pretendard', sans-serif", fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
           삭제
         </button>
       </td>
@@ -145,9 +137,9 @@ function SortableRow({
 }
 
 export default function AdminGraduates() {
-  const [mode, setMode] = useState<Mode>('ani');
-  const isAni = mode === 'ani';
-  const mainColor = isAni ? '#FF1659' : '#515883';
+  const [tab, setTab] = useState<Mode>('ani');
+  const currentTab = TAB_LIST.find((t) => t.key === tab)!;
+  const mainColor = currentTab.color;
 
   const [graduates, setGraduates] = useState<Graduate[]>([]);
   const [years, setYears] = useState<number[]>([]);
@@ -171,11 +163,18 @@ export default function AdminGraduates() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => { fetchYears(); }, [mode]);
-  useEffect(() => { fetchGraduates(); }, [mode, selectedYear]);
+  useEffect(() => { fetchYears(); }, [tab]);
+  useEffect(() => { fetchGraduates(); }, [tab, selectedYear]);
 
   async function fetchYears() {
-    const { data } = await supabase.from('graduates').select('year').eq('mode', mode).order('year', { ascending: false });
+    // 고입/임용은 category로 조회, 애니/회화는 mode로 조회
+    let query = supabase.from('graduates').select('year');
+    if (tab === 'high' || tab === 'employ') {
+      query = query.eq('category', tab);
+    } else {
+      query = query.eq('mode', tab).in('category', ['ani', 'fine']);
+    }
+    const { data } = await query.order('year', { ascending: false });
     if (data) {
       const uniqueYears = [...new Set(data.map((r) => r.year))];
       setYears(uniqueYears);
@@ -185,13 +184,13 @@ export default function AdminGraduates() {
 
   async function fetchGraduates() {
     setLoading(true);
-    const { data } = await supabase
-      .from('graduates')
-      .select('*')
-      .eq('mode', mode)
-      .eq('year', selectedYear)
-      .order('category')
-      .order('id');
+    let query = supabase.from('graduates').select('*').eq('year', selectedYear);
+    if (tab === 'high' || tab === 'employ') {
+      query = query.eq('category', tab);
+    } else {
+      query = query.eq('mode', tab).in('category', ['ani', 'fine']);
+    }
+    const { data } = await query.order('category').order('id');
     if (data) setGraduates(data);
     setLoading(false);
   }
@@ -204,8 +203,7 @@ export default function AdminGraduates() {
     setSaving(g.id);
     const { error } = await supabase.from('graduates').update({ student_name: g.student_name, university: g.university, department: g.department, category: g.category }).eq('id', g.id);
     if (error) alert('저장 실패: ' + error.message);
-    setSaving(null);
-    setSaved(g.id);
+    setSaving(null); setSaved(g.id);
     setTimeout(() => setSaved(null), 2000);
   }
 
@@ -215,8 +213,7 @@ export default function AdminGraduates() {
       const g = graduates[i];
       await supabase.from('graduates').update({ student_name: g.student_name, university: g.university, department: g.department, category: g.category, order: i + 1 }).eq('id', g.id);
     }
-    setSavingAll(false);
-    setSavedAll(true);
+    setSavingAll(false); setSavedAll(true);
     setTimeout(() => setSavedAll(false), 2000);
   }
 
@@ -226,7 +223,17 @@ export default function AdminGraduates() {
       return;
     }
     setAdding(true);
-    const { error } = await supabase.from('graduates').insert({ mode, year: newYear, category: newCategory, student_name: maskName(newName), university: newUniversity.trim(), department: newDepartment.trim(), order: graduates.length + 1 });
+    // mode 결정: 고입/임용은 ani로 기본 설정
+    const insertMode = (newCategory === 'high' || newCategory === 'employ') ? 'ani' : newCategory;
+    const { error } = await supabase.from('graduates').insert({
+      mode: insertMode,
+      year: newYear,
+      category: newCategory,
+      student_name: maskName(newName),
+      university: newUniversity.trim(),
+      department: newDepartment.trim(),
+      order: graduates.length + 1,
+    });
     if (error) { alert('추가 실패: ' + error.message); setAdding(false); return; }
     setNewName(''); setNewUniversity(''); setNewDepartment('');
     setAdding(false); setAdded(true);
@@ -249,49 +256,29 @@ export default function AdminGraduates() {
     const oldIndex = catList.findIndex((g) => g.id === active.id);
     const newIndex = catList.findIndex((g) => g.id === over.id);
     const newCatList = arrayMove(catList, oldIndex, newIndex);
-    // 전체 graduates 업데이트
     const otherList = graduates.filter((g) => g.category !== category);
     setGraduates([...otherList, ...newCatList]);
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '8px 10px',
-    border: '1px solid #E0E0E0',
-    borderRadius: '8px',
-    fontFamily: "'Pretendard', sans-serif",
-    fontSize: '13px',
-    color: '#1A1A1A',
-    outline: 'none',
-    boxSizing: 'border-box',
-    backgroundColor: '#ffffff',
+    width: '100%', padding: '8px 10px', border: '1px solid #E0E0E0', borderRadius: '8px',
+    fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#1A1A1A',
+    outline: 'none', boxSizing: 'border-box', backgroundColor: '#ffffff',
   };
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard', sans-serif",
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#888',
-    marginBottom: '4px',
-    display: 'block',
+    fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 600,
+    color: '#888', marginBottom: '4px', display: 'block',
   };
 
   const sectionBox: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #E0E0E0',
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '16px',
+    backgroundColor: '#ffffff', border: '1px solid #E0E0E0',
+    borderRadius: '12px', padding: '20px', marginBottom: '16px',
   };
 
   const thStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard', sans-serif",
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#888',
-    padding: '8px 10px',
-    backgroundColor: '#F5F5F5',
-    textAlign: 'left' as const,
+    fontFamily: "'Pretendard', sans-serif", fontSize: '11px', fontWeight: 700,
+    color: '#888', padding: '8px 10px', backgroundColor: '#F5F5F5', textAlign: 'left' as const,
   };
 
   const grouped = graduates.reduce((acc, g) => {
@@ -300,14 +287,20 @@ export default function AdminGraduates() {
     return acc;
   }, {} as Record<string, Graduate[]>);
 
+  const visibleCategories = tab === 'high' ? ['high'] :
+    tab === 'employ' ? ['employ'] :
+    tab === 'ani' ? ['ani'] : ['fine'];
+
   return (
     <div>
+      {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h2 style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '22px', fontWeight: 900, color: '#1A1A1A' }}>합격자 관리</h2>
         <div style={{ display: 'flex', gap: '4px', backgroundColor: '#F5F5F5', borderRadius: '10px', padding: '4px' }}>
-          {(['ani', 'fine'] as Mode[]).map((m) => (
-            <button key={m} onClick={() => setMode(m)} style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 600, padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: mode === m ? '#ffffff' : 'transparent', color: mode === m ? '#1A1A1A' : '#888', boxShadow: mode === m ? '0 1px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.15s' }}>
-              {m === 'ani' ? '만화·애니' : '회화'}
+          {TAB_LIST.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 600, padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: tab === t.key ? '#ffffff' : 'transparent', color: tab === t.key ? '#1A1A1A' : '#888', boxShadow: tab === t.key ? '0 1px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.15s' }}>
+              {t.label}
             </button>
           ))}
         </div>
@@ -329,8 +322,8 @@ export default function AdminGraduates() {
             <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as Category)} style={{ ...inputStyle, padding: '8px 6px' }}>
               <option value="ani">만화·애니</option>
               <option value="fine">회화</option>
-              <option value="고입">고입</option>
-              <option value="임용">임용</option>
+              <option value="high">고입</option>
+              <option value="employ">임용</option>
             </select>
           </div>
           <div>
@@ -349,7 +342,8 @@ export default function AdminGraduates() {
             <input type="text" value={newDepartment} onChange={(e) => setNewDepartment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGraduate()} style={inputStyle} placeholder="만화애니메이션학과" />
           </div>
         </div>
-        <button onClick={addGraduate} disabled={adding} style={{ padding: '10px 24px', backgroundColor: added ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '8px', fontFamily: "'Pretendard', sans-serif", fontSize: '14px', fontWeight: 700, cursor: adding ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s' }}>
+        <button onClick={addGraduate} disabled={adding}
+          style={{ padding: '10px 24px', backgroundColor: added ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '8px', fontFamily: "'Pretendard', sans-serif", fontSize: '14px', fontWeight: 700, cursor: adding ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s' }}>
           {adding ? '추가 중...' : added ? '추가 완료 ✓' : '합격자 추가'}
         </button>
       </div>
@@ -362,13 +356,15 @@ export default function AdminGraduates() {
               {selectedYear}년 합격자 목록
               <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 500, color: '#888', marginLeft: '8px' }}>총 {graduates.length}명</span>
             </h3>
-            <button onClick={saveAll} disabled={savingAll} style={{ padding: '6px 16px', backgroundColor: savedAll ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '8px', fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, cursor: savingAll ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s', whiteSpace: 'nowrap' }}>
+            <button onClick={saveAll} disabled={savingAll}
+              style={{ padding: '6px 16px', backgroundColor: savedAll ? '#4CAF50' : mainColor, color: '#ffffff', border: 'none', borderRadius: '8px', fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, cursor: savingAll ? 'not-allowed' : 'pointer', transition: 'background-color 0.3s', whiteSpace: 'nowrap' }}>
               {savingAll ? '저장 중...' : savedAll ? '저장 완료 ✓' : '전체 저장'}
             </button>
           </div>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {years.map((y) => (
-              <button key={y} onClick={() => setSelectedYear(y)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 600, backgroundColor: selectedYear === y ? mainColor : '#F5F5F5', color: selectedYear === y ? '#ffffff' : '#888', transition: 'all 0.15s' }}>
+              <button key={y} onClick={() => setSelectedYear(y)}
+                style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 600, backgroundColor: selectedYear === y ? mainColor : '#F5F5F5', color: selectedYear === y ? '#ffffff' : '#888', transition: 'all 0.15s' }}>
                 {y}
               </button>
             ))}
@@ -381,7 +377,7 @@ export default function AdminGraduates() {
           <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#aaa', textAlign: 'center', padding: '20px' }}>{selectedYear}년 합격자가 없어요</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {(['ani', 'fine', '고입', '임용'] as Category[]).map((cat) => {
+            {visibleCategories.map((cat) => {
               const list = grouped[cat];
               if (!list || list.length === 0) return null;
               const catColor = categoryColors[cat];
@@ -413,16 +409,7 @@ export default function AdminGraduates() {
                         <SortableContext items={list.map((g) => g.id)} strategy={verticalListSortingStrategy}>
                           <tbody>
                             {list.map((g) => (
-                              <SortableRow
-                                key={g.id}
-                                graduate={g}
-                                mainColor={mainColor}
-                                saving={saving}
-                                saved={saved}
-                                onUpdate={updateGraduate}
-                                onSave={saveGraduate}
-                                onDelete={deleteGraduate}
-                              />
+                              <SortableRow key={g.id} graduate={g} mainColor={mainColor} saving={saving} saved={saved} onUpdate={updateGraduate} onSave={saveGraduate} onDelete={deleteGraduate} />
                             ))}
                           </tbody>
                         </SortableContext>
