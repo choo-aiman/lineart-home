@@ -56,7 +56,7 @@ export default function AdminContact() {
   async function fetchPosts() {
     const { data } = await supabase
       .from('board_posts')
-      .select('*')
+      .select('id, created_at, mode, title, content, nickname, admin_reply, is_replied, is_secret')
       .order('created_at', { ascending: false });
     if (data) {
       setPosts(data);

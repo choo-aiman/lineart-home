@@ -1,32 +1,37 @@
 // AdminUsers 수정
-// 이유: +- 버튼 호버 핑크 효과 + 입력 필드 텍스트 색상 진하게
+// 이유: 접속 코드 → 구글 이메일 등록 방식, 직책 추가, 관리자 관리는 슈퍼어드민 전용
+// 실제 수정 권한은 Supabase 보안 규칙(슈퍼어드민만 admin_users 수정 가능)이 막습니다.
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import type { CurrentAdmin } from '@/app/admin/page';
 
 interface AdminUser {
   id: number;
-  code: string;
   name: string;
+  email: string | null;
+  role: string | null;
   level: number;
   permissions: string;
   is_active: boolean;
   last_login: string | null;
-  failed_attempts: number;
-  locked_until: string | null;
 }
 
+// 'users'(관리자 관리)는 슈퍼어드민 전용이라 부여 목록에서 뺌
 const PERMISSION_TABS = [
-  { key: 'users',     label: '관리자' },
-  { key: 'design',    label: '홈&소개 디자인' },
+  { key: 'design',    label: '디자인 편집' },
   { key: 'lessons',   label: '수업안내' },
   { key: 'gallery',   label: '갤러리' },
   { key: 'board',     label: '문의·게시판' },
   { key: 'blog',      label: '블로그' },
   { key: 'graduates', label: '합격자' },
 ];
+
+const ROLE_OPTIONS = ['원장', '부원장', '전임', '준전임', '보조'];
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatLastLogin(dateStr: string | null): string {
   if (!dateStr) return '-';
@@ -36,12 +41,17 @@ function formatLastLogin(dateStr: string | null): string {
   return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
 }
 
-export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }) {
+function explainError(message: string): string {
+  if (message.includes('admin_users_email_key') || message.includes('duplicate')) return '이미 등록된 구글 메일이에요.';
+  return message;
+}
+
+export default function AdminUsers({ currentAdmin }: { currentAdmin: CurrentAdmin }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newCode, setNewCode] = useState('');
-  const [newLevel, setNewLevel] = useState(2);
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isSuper = currentAdmin.level === 1;
@@ -53,9 +63,15 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
   async function fetchUsers() {
     const { data } = await supabase
       .from('admin_users')
-      .select('*')
+      .select('id, name, email, role, level, permissions, is_active, last_login')
       .order('id');
     if (data) setUsers(data);
+  }
+
+  async function updateUser(user: AdminUser, values: Partial<AdminUser>) {
+    const { error } = await supabase.from('admin_users').update(values).eq('id', user.id);
+    if (error) alert('저장 실패: ' + explainError(error.message));
+    fetchUsers();
   }
 
   async function togglePermission(user: AdminUser, permKey: string) {
@@ -70,32 +86,56 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
       ? current.filter((p) => p !== permKey)
       : [...current, permKey];
 
-    await supabase.from('admin_users').update({ permissions: updated.join(',') }).eq('id', user.id);
-    fetchUsers();
+    await updateUser(user, { permissions: updated.join(',') });
   }
 
   async function toggleActive(user: AdminUser) {
     if (!isSuper) return;
-    await supabase.from('admin_users').update({ is_active: !user.is_active }).eq('id', user.id);
-    fetchUsers();
+    if (user.level === 1) return;
+    await updateUser(user, { is_active: !user.is_active });
+  }
+
+  async function editEmail(user: AdminUser) {
+    if (!isSuper || user.level === 1) return;
+    const input = prompt(`${user.name} 님의 구글 메일`, user.email ?? '');
+    if (input === null) return;
+    const email = input.trim().toLowerCase();
+    if (!EMAIL_PATTERN.test(email)) {
+      alert('메일 주소 형식이 올바르지 않아요.');
+      return;
+    }
+    await updateUser(user, { email });
   }
 
   async function handleAdd() {
-    if (!newName.trim() || !newCode.trim()) return;
+    const email = newEmail.trim().toLowerCase();
+    if (!newName.trim()) {
+      alert('이름을 입력해주세요.');
+      return;
+    }
+    // 구글 메일은 나중에 '메일 등록 필요'를 눌러 채워도 됨
+    if (email && !EMAIL_PATTERN.test(email)) {
+      alert('메일 주소 형식이 올바르지 않아요. (예: hong@gmail.com)');
+      return;
+    }
     setSaving(true);
-    await supabase.from('admin_users').insert({
+    const { error } = await supabase.from('admin_users').insert({
       name: newName.trim(),
-      code: newCode.trim(),
-      level: newLevel,
+      email: email || null,
+      role: newRole.trim() || null,
+      level: 2,
       permissions: '',
       is_active: true,
-      failed_attempts: 0,
     });
-    setNewName('');
-    setNewCode('');
-    setNewLevel(2);
-    setShowAddForm(false);
     setSaving(false);
+    if (error) {
+      alert('추가 실패: ' + explainError(error.message));
+      return;
+    }
+    setNewName('');
+    setNewEmail('');
+    setNewRole('');
+    setShowAddForm(false);
     fetchUsers();
   }
 
@@ -104,8 +144,23 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
       alert('슈퍼어드민은 삭제할 수 없어요.');
       return;
     }
-    if (!confirm(`${user.name} 계정을 삭제할까요?`)) return;
-    await supabase.from('admin_users').delete().eq('id', user.id);
+    // 실수 방지: 누구를 지우는지 보여주고, 이름을 직접 입력해야 삭제됨
+    const warning =
+      `⚠️ 관리자 계정을 삭제합니다.\n\n` +
+      `이름: ${user.name}\n` +
+      `직책: ${user.role ?? '-'}\n` +
+      `구글 메일: ${user.email ?? '(미등록)'}\n\n` +
+      `삭제하면 이 사람은 관리자 화면에 들어올 수 없고, 권한 설정도 사라져요. 되돌릴 수 없어요.\n` +
+      `잠시 못 들어오게만 하려면 취소하고 '상태' 스위치를 눌러 꺼두세요.\n\n` +
+      `정말 삭제하려면 아래에 이름을 그대로 입력해주세요: ${user.name}`;
+    const typed = prompt(warning, '');
+    if (typed === null) return;
+    if (typed.trim() !== user.name) {
+      alert('이름이 달라서 삭제하지 않았어요.');
+      return;
+    }
+    const { error } = await supabase.from('admin_users').delete().eq('id', user.id);
+    if (error) alert('삭제 실패: ' + explainError(error.message));
     fetchUsers();
   }
 
@@ -142,6 +197,16 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
     justifyContent: 'center',
     transition: 'all 0.15s',
     color: '#1A1A1A',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    border: '1px solid #E0E0E0',
+    borderRadius: '8px',
+    fontFamily: "'Pretendard', sans-serif",
+    fontSize: '13px',
+    color: '#1A1A1A',
+    outline: 'none',
   };
 
   return (
@@ -212,54 +277,29 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="예: 강사-홍길동"
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #E0E0E0',
-                borderRadius: '8px',
-                fontFamily: "'Pretendard', sans-serif",
-                fontSize: '13px',
-                width: '160px',
-                color: '#1A1A1A',
-                outline: 'none',
-              }}
+              placeholder="예: 홍길동"
+              style={{ ...inputStyle, width: '140px' }}
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', color: '#888' }}>접속 코드</label>
+            <label style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', color: '#888' }}>구글 메일</label>
             <input
-              value={newCode}
-              onChange={(e) => setNewCode(e.target.value)}
-              placeholder="예: ani-hong-admin5"
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #E0E0E0',
-                borderRadius: '8px',
-                fontFamily: "'Pretendard', sans-serif",
-                fontSize: '13px',
-                width: '180px',
-                color: '#1A1A1A',
-                outline: 'none',
-              }}
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="예: hong@gmail.com"
+              style={{ ...inputStyle, width: '220px' }}
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', color: '#888' }}>레벨</label>
-            <select
-              value={newLevel}
-              onChange={(e) => setNewLevel(Number(e.target.value))}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #E0E0E0',
-                borderRadius: '8px',
-                fontFamily: "'Pretendard', sans-serif",
-                fontSize: '13px',
-                color: '#1A1A1A',
-                outline: 'none',
-              }}
-            >
-              <option value={2}>Lv.2 어드민</option>
-            </select>
+            <label style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', color: '#888' }}>직책</label>
+            <input
+              list="admin-role-options"
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              placeholder="선택 또는 입력"
+              style={{ ...inputStyle, width: '140px' }}
+            />
           </div>
           <button
             onClick={handleAdd}
@@ -297,13 +337,18 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
         </div>
       )}
 
+      <datalist id="admin-role-options">
+        {ROLE_OPTIONS.map((r) => <option key={r} value={r} />)}
+      </datalist>
+
       {/* 테이블 */}
       <div style={{ overflowX: 'auto', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #E0E0E0' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
           <thead>
             <tr>
               <th style={thStyle}>이름</th>
-              <th style={thStyle}>코드</th>
+              <th style={thStyle}>직책</th>
+              <th style={thStyle}>구글 메일</th>
               <th style={thStyle}>레벨</th>
               <th style={thStyle}>권한(슈퍼어드민만 어드민에게 부여)</th>
               <th style={thStyle}>상태</th>
@@ -321,8 +366,62 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
 
               return (
                 <tr key={user.id}>
-                  <td style={tdStyle}>{user.name}</td>
-                  <td style={{ ...tdStyle, color: '#888', fontSize: '12px' }}>{user.code}</td>
+                  <td style={tdStyle}>
+                    {isSuper ? (
+                      <input
+                        defaultValue={user.name}
+                        placeholder="이름"
+                        onBlur={(e) => {
+                          const name = e.target.value.trim();
+                          if (!name) {
+                            e.target.value = user.name;
+                            return;
+                          }
+                          if (name !== user.name) updateUser(user, { name });
+                        }}
+                        style={{ ...inputStyle, width: '100px', padding: '4px 8px', fontSize: '13px' }}
+                      />
+                    ) : (
+                      user.name
+                    )}
+                  </td>
+                  <td style={tdStyle}>
+                    {isSuper ? (
+                      <input
+                        list="admin-role-options"
+                        defaultValue={user.role ?? ''}
+                        placeholder="직책"
+                        onBlur={(e) => {
+                          const role = e.target.value.trim() || null;
+                          if (role !== (user.role ?? null)) updateUser(user, { role });
+                        }}
+                        style={{ ...inputStyle, width: '110px', padding: '4px 8px', fontSize: '12px' }}
+                      />
+                    ) : (
+                      user.role ?? '-'
+                    )}
+                  </td>
+                  <td style={{ ...tdStyle, fontSize: '12px' }}>
+                    {isSuper && user.level !== 1 ? (
+                      <button
+                        onClick={() => editEmail(user)}
+                        style={{
+                          fontFamily: "'Pretendard', sans-serif",
+                          fontSize: '12px',
+                          color: user.email ? '#555' : '#FF1659',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        {user.email ?? '메일 등록 필요'}
+                      </button>
+                    ) : (
+                      <span style={{ color: '#888' }}>{user.email ?? '-'}</span>
+                    )}
+                  </td>
                   <td style={tdStyle}>
                     <span
                       style={{
@@ -336,11 +435,12 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {user.level === 1 ? 'Lv.1 슈퍼어드민' : 'Lv.2 어드민'}
+                      {user.level === 1 ? '슈퍼어드민' : '어드민'}
                     </span>
                   </td>
                   <td style={tdStyle}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {/* 3개씩 2줄로 고르게 배치 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px', minWidth: '300px' }}>
                       {PERMISSION_TABS.map((tab) => {
                         const hasPermission = perms.includes(tab.key);
                         const isClickable = isSuper && user.level !== 1;
@@ -352,13 +452,14 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
                               fontFamily: "'Pretendard', sans-serif",
                               fontSize: '12px',
                               fontWeight: 600,
-                              padding: '4px 10px',
+                              padding: '4px 6px',
                               borderRadius: '20px',
-                              border: hasPermission ? 'none' : '1px solid #E0E0E0',
+                              border: hasPermission ? '1px solid #FF1659' : '1px solid #E0E0E0',
                               backgroundColor: hasPermission ? '#FF1659' : 'transparent',
                               color: hasPermission ? '#ffffff' : '#aaa',
                               cursor: isClickable ? 'pointer' : 'default',
                               transition: 'all 0.15s',
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             {tab.label}
@@ -368,24 +469,35 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isSuper ? 'pointer' : 'default' }}
-                      onClick={() => isSuper && toggleActive(user)}
+                    {/* 켜짐 = 활성(로그인 가능), 꺼짐 = 비활성 */}
+                    <span
+                      title={user.is_active ? '활성 (누르면 차단)' : '비활성 (누르면 허용)'}
+                      onClick={() => toggleActive(user)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        width: '38px',
+                        height: '22px',
+                        borderRadius: '11px',
+                        padding: '2px',
+                        backgroundColor: user.is_active ? '#4CAF50' : '#D0D0D0',
+                        cursor: isSuper && user.level !== 1 ? 'pointer' : 'default',
+                        opacity: user.level === 1 ? 0.5 : 1,
+                        transition: 'background-color 0.15s',
+                      }}
                     >
                       <span
                         style={{
-                          width: '8px',
-                          height: '8px',
+                          width: '18px',
+                          height: '18px',
                           borderRadius: '50%',
-                          backgroundColor: user.is_active ? '#4CAF50' : '#FF1659',
-                          display: 'inline-block',
-                          flexShrink: 0,
+                          backgroundColor: '#ffffff',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                          transform: user.is_active ? 'translateX(16px)' : 'translateX(0)',
+                          transition: 'transform 0.15s',
                         }}
                       />
-                      <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#555' }}>
-                        {user.is_active ? '활성' : '비활성'}
-                      </span>
-                    </div>
+                    </span>
                   </td>
                   <td style={{ ...tdStyle, color: '#888', fontSize: '12px' }}>
                     {formatLastLogin(user.last_login)}
@@ -395,18 +507,23 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: AdminUser }
                       {user.level !== 1 && (
                         <button
                           onClick={() => handleDelete(user)}
+                          title="삭제"
+                          aria-label={`${user.name} 삭제`}
                           style={{
-                            padding: '4px 12px',
+                            width: '24px',
+                            height: '24px',
+                            padding: 0,
                             backgroundColor: 'transparent',
                             color: '#FF1659',
                             border: '1px solid #FF1659',
                             borderRadius: '6px',
                             fontFamily: "'Pretendard', sans-serif",
-                            fontSize: '12px',
+                            fontSize: '13px',
+                            lineHeight: 1,
                             cursor: 'pointer',
                           }}
                         >
-                          삭제
+                          ×
                         </button>
                       )}
                     </td>

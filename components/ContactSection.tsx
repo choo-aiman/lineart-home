@@ -15,22 +15,16 @@ interface ContactCard {
   button_url: string;
 }
 
+// 방문자 화면에는 날짜를 보여주지 않음 (작성 날짜는 관리자 화면에서만 확인)
 interface Post {
   id: number;
-  created_at: string;
   mode: string;
   title: string;
-  content: string;
+  content: string | null;
   nickname: string;
-  password: string;
   admin_reply: string | null;
   is_replied: boolean;
   is_secret: boolean;
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
 }
 
 export default function ContactSection({ mode }: { mode: string }) {
@@ -70,10 +64,8 @@ export default function ContactSection({ mode }: { mode: string }) {
   }
 
   async function fetchPosts() {
-    const { data, error } = await supabase
-      .from('board_posts')
-      .select('id, created_at, mode, title, nickname, is_replied, admin_reply, content, password, is_secret')
-      .order('created_at', { ascending: false });
+    // 비밀글·답변 전 글은 본문 없이 옴 (비밀번호는 아예 오지 않음)
+    const { data, error } = await supabase.rpc('board_list');
     if (error) alert('불러오기 실패: ' + error.message);
     if (data) setPosts(data);
   }
@@ -156,8 +148,11 @@ export default function ContactSection({ mode }: { mode: string }) {
     }
   }
 
-  function handleCheckPw(post: Post) {
-    if (checkPw === post.password) {
+  // 비밀번호 확인은 DB 함수(board_open)가 하고, 맞을 때만 본문·답변을 받아옴
+  async function handleCheckPw(post: Post) {
+    const { data } = await supabase.rpc('board_open', { p_id: post.id, p_password: checkPw });
+    if (data) {
+      setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, content: data.content, admin_reply: data.admin_reply } : p)));
       setExpandedId(post.id);
       setCheckingId(null);
       setCheckPw('');
@@ -457,13 +452,13 @@ export default function ContactSection({ mode }: { mode: string }) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 120px 120px 80px',
+                gridTemplateColumns: '1fr 120px 120px',
                 backgroundColor: '#F5F5F5',
                 padding: '12px 20px',
                 borderBottom: '1px solid #E0E0E0',
               }}
             >
-              {['제목', '분류', '작성자', '날짜'].map((h) => (
+              {['제목', '분류', '작성자'].map((h) => (
                 <span key={h} style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, color: '#555' }}>{h}</span>
               ))}
             </div>
@@ -480,7 +475,7 @@ export default function ContactSection({ mode }: { mode: string }) {
                   onClick={() => handleExpand(post)}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 120px 120px 80px',
+                    gridTemplateColumns: '1fr 120px 120px',
                     padding: '14px 20px',
                     borderBottom: '1px solid #F0F0F0',
                     cursor: 'pointer',
@@ -510,9 +505,6 @@ export default function ContactSection({ mode }: { mode: string }) {
                   </span>
                   <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#888' }}>
                     {post.nickname.length > 5 ? post.nickname.slice(0, 5) + '...' : post.nickname}
-                  </span>
-                  <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#888' }}>
-                    {formatDate(post.created_at)}
                   </span>
                 </div>
 

@@ -18,24 +18,59 @@ interface Slide {
   image_side: string;
 }
 
+// PC(화면 100%) 기준 글자 크기. 화면이 좁아지면 같은 비율로 자동 축소됨
+const DEFAULT_TITLE_SIZE = 32;
+const DEFAULT_SUBTITLE_SIZE = 16;
+
+// 기준 크기(32/16)일 때 예전 값과 똑같이 보이도록 비율을 유지해서 계산
+function fluidSize(size: number, defaultSize: number, minRatio: number, vwAtDefault: number) {
+  const min = Math.round(size * minRatio);
+  const vw = (vwAtDefault * size) / defaultSize;
+  return `clamp(${min}px, ${vw.toFixed(2)}vw, ${size}px)`;
+}
+
 export default function AboutSlideSection({ mode }: { mode: string }) {
   const isAni = mode === 'ani';
   const mainColor = isAni ? '#FF1659' : '#515883';
   const [slides, setSlides] = useState<Slide[]>([]);
   const [current, setCurrent] = useState(0);
+  // 제목·부제목은 관리자(학원소개 관리)에서 고칠 수 있고, 없으면 아래 기본 문구를 씀
+  const [heading, setHeading] = useState({
+    title: isAni ? '애니반 소개' : '회화반 소개',
+    subtitle: isAni ? '라인아트 애니반을 소개합니다' : '라인아트 회화반을 소개합니다',
+    titleSize: DEFAULT_TITLE_SIZE,
+    subtitleSize: DEFAULT_SUBTITLE_SIZE,
+  });
 
   useEffect(() => {
     setCurrent(0);
+    setHeading({
+      title: isAni ? '애니반 소개' : '회화반 소개',
+      subtitle: isAni ? '라인아트 애니반을 소개합니다' : '라인아트 회화반을 소개합니다',
+      titleSize: DEFAULT_TITLE_SIZE,
+      subtitleSize: DEFAULT_SUBTITLE_SIZE,
+    });
     async function fetch() {
-      const { data } = await supabase
-        .from('about_slides')
-        .select('*')
-        .eq('mode', mode)
-        .order('order');
-      if (data && data.length > 0) setSlides(data);
+      const [slideRes, headingRes] = await Promise.all([
+        supabase.from('about_slides').select('*').eq('mode', mode).order('order'),
+        supabase.from('site_content').select('key, value').eq('mode', mode).eq('section', 'about'),
+      ]);
+      if (slideRes.data && slideRes.data.length > 0) setSlides(slideRes.data);
+      if (headingRes.data) {
+        // heading_ 접두사: 예전부터 있던 title/subtitle 값과 겹치지 않게
+        const pick = (key: string) => headingRes.data?.find((r) => r.key === key)?.value;
+        const titleSize = Number(pick('heading_title_size'));
+        const subtitleSize = Number(pick('heading_subtitle_size'));
+        setHeading((prev) => ({
+          title: pick('heading_title') || prev.title,
+          subtitle: pick('heading_subtitle') || prev.subtitle,
+          titleSize: titleSize > 0 ? titleSize : prev.titleSize,
+          subtitleSize: subtitleSize > 0 ? subtitleSize : prev.subtitleSize,
+        }));
+      }
     }
     fetch();
-  }, [mode]);
+  }, [mode, isAni]);
 
   if (slides.length === 0) return null;
 
@@ -52,15 +87,15 @@ export default function AboutSlideSection({ mode }: { mode: string }) {
         <div className="mb-10">
           <h2
             className="font-black text-[#1A1A1A] mb-2"
-            style={{ fontFamily: "'Pretendard', sans-serif", fontSize: 'clamp(22px, 2vw, 32px)' }}
+            style={{ fontFamily: "'Pretendard', sans-serif", fontSize: fluidSize(heading.titleSize, DEFAULT_TITLE_SIZE, 0.6875, 2) }}
           >
-            {isAni ? '애니반 소개' : '회화반 소개'}
+            {heading.title}
           </h2>
           <p
             className="text-[#888]"
-            style={{ fontFamily: "'Pretendard', sans-serif", fontSize: 'clamp(13px, 0.9vw, 16px)', fontWeight: 500 }}
+            style={{ fontFamily: "'Pretendard', sans-serif", fontSize: fluidSize(heading.subtitleSize, DEFAULT_SUBTITLE_SIZE, 0.8125, 0.9), fontWeight: 500 }}
           >
-            {isAni ? '라인아트 애니반을 소개합니다' : '라인아트 회화반을 소개합니다'}
+            {heading.subtitle}
           </p>
         </div>
 
