@@ -44,17 +44,25 @@ function ImageUploader({
   label,
   fileName,
   hint,
+  mode,
+  section,
+  contentKey,
+  currentUrl,
   onUploaded,
 }: {
   label: string;
   fileName: string;
   hint?: string;
+  mode: string;
+  section: string;    // site_content 의 섹션 (hero / class_cards)
+  contentKey: string; // 사진 주소를 저장할 key
+  currentUrl?: string;
   onUploaded: () => void;
 }) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
-  const [preview, setPreview] = useState(`${IMG_BASE}/${fileName}?t=${Date.now()}`);
+  const [preview, setPreview] = useState(currentUrl || `${IMG_BASE}/${fileName}`);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function uploadFile(file: File) {
@@ -62,13 +70,30 @@ function ImageUploader({
     setUploading(true);
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { upsert: true, contentType: file.type });
-    if (!error) {
-      setPreview(`${IMG_BASE}/${fileName}?t=${Date.now()}`);
-      setDone(true);
-      setTimeout(() => setDone(false), 2000);
-      onUploaded();
+      .upload(fileName, file, { upsert: true, contentType: file.type, cacheControl: '2678400' });
+    if (error) {
+      alert('업로드 실패: ' + error.message);
+      setUploading(false);
+      return;
     }
+    // 사진을 바꾸면 주소 끝의 번호도 바뀌어서, 방문자가 예전 사진을 계속 보지 않음
+    const url = `${IMG_BASE}/${fileName}?v=${Date.now()}`;
+    const { data: existing } = await supabase
+      .from('site_content')
+      .select('id')
+      .eq('mode', mode)
+      .eq('section', section)
+      .eq('key', contentKey)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from('site_content').update({ value: url }).eq('id', existing.id);
+    } else {
+      await supabase.from('site_content').insert({ mode, section, key: contentKey, value: url });
+    }
+    setPreview(url);
+    setDone(true);
+    setTimeout(() => setDone(false), 2000);
+    onUploaded();
     setUploading(false);
   }
 
@@ -376,7 +401,11 @@ export default function AdminHome() {
               label={mode === 'ani' ? '애니반 캐릭터 이미지' : '회화반 캐릭터 이미지'}
               fileName={heroImageName}
               hint="권장 사이즈: 1700 × 1200px / PNG"
-              onUploaded={() => setImgKey((k) => k + 1)}
+              mode={mode}
+              section="hero"
+              contentKey="image"
+              currentUrl={heroEdits['image']}
+              onUploaded={() => { setImgKey((k) => k + 1); fetchHero(); }}
             />
           </div>
         </div>
@@ -461,7 +490,11 @@ export default function AdminHome() {
                 label={`카드 ${i + 1} 이미지`}
                 fileName={fileName}
                 hint="권장 사이즈: 800 × 600px / JPG"
-                onUploaded={() => setImgKey((k) => k + 1)}
+                mode={mode}
+                section="class_cards"
+                contentKey={`card${i + 1}_image`}
+                currentUrl={cardEdits[`card${i + 1}_image`]}
+                onUploaded={() => { setImgKey((k) => k + 1); fetchCards(); }}
               />
             ))}
           </div>

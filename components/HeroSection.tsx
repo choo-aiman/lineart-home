@@ -68,7 +68,8 @@ useEffect(() => {
 
   const bgColor  = isAni ? '#FF1659' : '#292929';
   const btnColor = isAni ? '#FF1659' : '#515883';
-  const charImg  = `${IMG_BASE}/hero_img_${isAni ? 'ani' : 'fine'}.png`;
+  // 관리자에서 사진을 바꾸면 주소 끝 번호가 바뀐 새 주소가 저장됨 (없으면 기존 파일)
+  const charImg  = getVal(contents, 'image', `${IMG_BASE}/hero_img_${isAni ? 'ani' : 'fine'}.png`);
 
   type FadeItem = {
     content: string;

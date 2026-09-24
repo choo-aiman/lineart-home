@@ -45,7 +45,7 @@ function BannerUploader({
     await supabase.storage.from('images').remove([fileName]);
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { contentType: file.type });
+      .upload(fileName, file, { contentType: file.type, cacheControl: '2678400' });
     if (error) {
       alert('업로드 실패: ' + error.message);
       setUploading(false);
@@ -128,7 +128,7 @@ function IconUploader({
     await supabase.storage.from('images').remove([fileName]);
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { contentType: file.type });
+      .upload(fileName, file, { contentType: file.type, cacheControl: '2678400' });
     if (error) {
       alert('업로드 실패: ' + error.message);
       setUploading(false);

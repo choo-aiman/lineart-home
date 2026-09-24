@@ -42,7 +42,7 @@ function SlideImageUploader({
     const fileName = `about_slide_${slideId}.jpg`;
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { upsert: true, contentType: file.type });
+      .upload(fileName, file, { upsert: true, contentType: file.type, cacheControl: '2678400' });
     if (!error) {
       const url = `${IMG_BASE}/${fileName}?t=${Date.now()}`;
       await supabase.from('about_slides').update({ image_url: url }).eq('id', slideId);

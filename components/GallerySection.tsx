@@ -3,6 +3,7 @@
 
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
@@ -130,17 +131,17 @@ export default function GallerySection({ mode }: { mode: string }) {
                                     backgroundColor: '#F0F0F0',
                                 }}
                             >
-                                {/* 이미지 */}
+                                {/* 이미지 — next/image 가 화면 크기에 맞게 줄이고 WebP 로 변환해서 내려줌 */}
                                 {item.image_url && (
-                                    <img
+                                    <Image
                                         src={item.image_url}
                                         alt={maskName(item.student_name)}
+                                        fill
+                                        quality={90}
+                                        sizes="(max-width: 768px) 50vw, 25vw"
                                         style={{
-                                            width: '100%',
-                                            height: '100%',
                                             objectFit: 'cover',
                                             objectPosition: `${(item.focus_x ?? 0.5) * 100}% ${(item.focus_y ?? 0.5) * 100}%`,
-                                            display: 'block',
                                             userSelect: 'none',
                                             pointerEvents: 'none',
                                         }}

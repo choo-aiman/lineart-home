@@ -49,7 +49,7 @@ function GalleryImageUploader({
     const fileName = `gallery_${itemId}.jpg`;
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { upsert: true, contentType: file.type });
+      .upload(fileName, file, { upsert: true, contentType: file.type, cacheControl: '2678400' });
     if (error) {
       alert('업로드 실패: ' + error.message);
       setUploading(false);

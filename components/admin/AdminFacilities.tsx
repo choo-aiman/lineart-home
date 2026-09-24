@@ -45,7 +45,8 @@ function FacilityImageUploader({
       .from('images')
       .upload(fileName, file, { 
         contentType: file.type,
-        upsert: true  // ← 이미 있으면 덮어쓰기
+        upsert: true,  // ← 이미 있으면 덮어쓰기
+        cacheControl: '2678400'
       });
   
     if (error) {

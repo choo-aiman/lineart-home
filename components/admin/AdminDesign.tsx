@@ -66,7 +66,7 @@ function ImageUploader({
     setUploading(true);
     const { error } = await supabase.storage
       .from('images')
-      .upload(fileName, file, { upsert: true, contentType: file.type });
+      .upload(fileName, file, { upsert: true, contentType: file.type, cacheControl: '2678400' });
     if (!error) {
       setPreview(`${IMG_BASE}/${fileName}?t=${Date.now()}`);
       setDone(true);

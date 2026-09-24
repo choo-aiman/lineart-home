@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
@@ -18,18 +19,10 @@ export default function ClassCards({ mode }: { mode: string }) {
   const tagBg     = isAni ? '#FFF0F4' : '#515883';
   const tagColor  = isAni ? '#FF1659' : '#ffffff';
 
-  // 모드별 카드 이미지 경로
-  const cardImages = isAni
-    ? [
-        `${IMG_BASE}/classcard_img_ani1.jpg`,
-        `${IMG_BASE}/classcard_img_ani2.jpg`,
-        `${IMG_BASE}/classcard_img_ani3.jpg`,
-      ]
-    : [
-        `${IMG_BASE}/classcard_img_fine1.jpg`,
-        `${IMG_BASE}/classcard_img_fine2.jpg`,
-        `${IMG_BASE}/classcard_img_fine3.jpg`,
-      ];
+  // 모드별 카드 이미지 경로 (관리자에서 바꾸면 주소 끝 번호가 바뀐 새 주소가 저장됨)
+  const cardImages = [1, 2, 3].map(
+    (n) => contents[`card${n}_image`] || `${IMG_BASE}/classcard_img_${isAni ? 'ani' : 'fine'}${n}.jpg`,
+  );
 
   useEffect(() => {
     async function fetchContents() {
@@ -105,17 +98,16 @@ export default function ClassCards({ mode }: { mode: string }) {
               {/* 상단 이미지 영역 */}
               <div
                 className="w-full overflow-hidden"
-                style={{ aspectRatio: '4 / 3' }}
+                style={{ aspectRatio: '4 / 3', position: 'relative' }}
               >
-                <img
+                {/* next/image: 화면 크기에 맞게 줄이고 WebP 로 변환해서 내려줌 */}
+                <Image
                   src={cardImages[i]}
                   alt={card.title}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
+                  fill
+                  quality={90}
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectFit: 'cover' }}
                 />
               </div>
 
