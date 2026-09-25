@@ -184,6 +184,8 @@ useEffect(() => {
                     style={{
                       fontFamily: "'Pretendard', sans-serif",
                       fontSize: 'clamp(24px, 2.8vw, 52px)',
+                      // 배경 작품 위에서도 잘 읽히도록 은은한 그림자
+                      textShadow: '0 2px 12px rgba(0,0,0,0.55)',
                     }}
                   >
                     {item.content}
@@ -195,6 +197,7 @@ useEffect(() => {
                     style={{
                       fontFamily: "'Pretendard', sans-serif",
                       fontSize: 'clamp(12px, 0.9vw, 18px)',
+                      textShadow: '0 1px 8px rgba(0,0,0,0.5)',
                     }}
                   >
                     {item.content}
