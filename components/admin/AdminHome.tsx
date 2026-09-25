@@ -328,6 +328,12 @@ export default function AdminHome() {
 
   const heroImageName = mode === 'ani' ? 'hero_img_ani.png' : 'hero_img_fine.png';
 
+  // 배경 작품 위에 덮는 테마 색의 진하기 (%)
+  const DEFAULT_VEIL = mode === 'ani' ? 78 : 80;
+  const veilValue = heroEdits['veil_opacity']
+    ? Number(heroEdits['veil_opacity'])
+    : DEFAULT_VEIL;
+
   return (
     <div>
       {/* 페이지 제목 + 모드 탭 */}
@@ -386,9 +392,41 @@ export default function AdminHome() {
               )}
             </div>
           ))}
+
+          {/* 배경 작품 위에 덮는 테마 색의 진하기 */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>배경 작품 덮개 진하기</label>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1A1A1A' }}>
+                  {veilValue}%
+                </span>
+                {veilValue !== DEFAULT_VEIL && (
+                  <button
+                    onClick={() => setHeroEdits((prev) => ({ ...prev, veil_opacity: String(DEFAULT_VEIL) }))}
+                    style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  >
+                    기본값({DEFAULT_VEIL})
+                  </button>
+                )}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={veilValue}
+              onChange={(e) => setHeroEdits((prev) => ({ ...prev, veil_opacity: e.target.value }))}
+              style={{ width: '100%', accentColor: '#FF1659', cursor: 'pointer' }}
+            />
+            <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '11px', color: '#aaa', marginTop: '6px' }}>
+              히어로 배경에 깔리는 갤러리 작품 위에 덮는 색입니다. 숫자가 클수록 작품이 옅게, 작을수록 진하게 보입니다. (0 = 작품 그대로)
+            </p>
+          </div>
         </div>
         {saveBtn(heroSaving, heroSaved, () =>
-          saveSection(HERO_KEYS.map((k) => k.key), heroContents, heroEdits, 'hero', setHeroSaving, setHeroSaved, fetchHero)
+          saveSection([...HERO_KEYS.map((k) => k.key), 'veil_opacity'], heroContents, heroEdits, 'hero', setHeroSaving, setHeroSaved, fetchHero)
         )}
 
         <div style={{ borderTop: '1px solid #F0F0F0', marginTop: '24px', paddingTop: '24px' }}>

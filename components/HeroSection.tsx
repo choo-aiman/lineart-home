@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import HeroGalleryBackdrop from '@/components/HeroGalleryBackdrop';
 
 const SUPABASE_URL = 'https://pjqoanpmlunynhsumeso.supabase.co';
 const IMG_BASE = `${SUPABASE_URL}/storage/v1/object/public/images`;
@@ -134,6 +135,9 @@ useEffect(() => {
           width: '100%',
         }}
       >
+        {/* 캐릭터 뒤에서 갤러리 작품이 천천히 떠다니는 배경 */}
+        <HeroGalleryBackdrop mode={mode} veilOpacity={getVal(contents, 'veil_opacity', '')} />
+
         <div
           className="h-full flex relative"
           style={{ maxWidth: '1920px', margin: '0 auto', padding: '0 4vw' }}
