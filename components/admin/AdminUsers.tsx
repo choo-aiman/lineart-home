@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { CurrentAdmin } from '@/app/admin/page';
+import type { CurrentAdmin } from '@/lib/useAdmin';
 
 interface AdminUser {
   id: number;
@@ -27,9 +27,20 @@ const PERMISSION_TABS = [
   { key: 'board',     label: '문의·게시판' },
   { key: 'blog',      label: '블로그' },
   { key: 'graduates', label: '합격자' },
+  { key: 'system',    label: '통합 운영' },
 ];
 
 const ROLE_OPTIONS = ['원장', '부원장', '전임', '준전임', '보조'];
+
+// 직책 위계 순으로 정렬 (같은 직책이면 먼저 등록한 사람이 위)
+const ROLE_ORDER = ['원장', '부원장', '전임', '준전임', '보조'];
+function roleRank(role: string | null): number {
+  const i = ROLE_ORDER.indexOf((role ?? '').trim());
+  return i === -1 ? ROLE_ORDER.length : i; // 직책이 없거나 목록에 없으면 맨 아래
+}
+function byRole(a: AdminUser, b: AdminUser): number {
+  return roleRank(a.role) - roleRank(b.role) || a.id - b.id;
+}
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,7 +76,7 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: CurrentAdmi
       .from('admin_users')
       .select('id, name, email, role, level, permissions, is_active, last_login')
       .order('id');
-    if (data) setUsers(data);
+    if (data) setUsers([...data].sort(byRole));
   }
 
   async function updateUser(user: AdminUser, values: Partial<AdminUser>) {
@@ -395,7 +406,7 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: CurrentAdmi
                           const role = e.target.value.trim() || null;
                           if (role !== (user.role ?? null)) updateUser(user, { role });
                         }}
-                        style={{ ...inputStyle, width: '110px', padding: '4px 8px', fontSize: '12px' }}
+                        style={{ ...inputStyle, width: '76px', padding: '4px 8px', fontSize: '12px' }}
                       />
                     ) : (
                       user.role ?? '-'
@@ -423,24 +434,29 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: CurrentAdmi
                     )}
                   </td>
                   <td style={tdStyle}>
+                    {/* 자리를 아끼려고 동그라미 표시. 저장된 값(레벨 1·2)은 그대로임 */}
                     <span
+                      title={user.level === 1 ? '슈퍼어드민' : '어드민'}
                       style={{
                         fontFamily: "'Pretendard', sans-serif",
                         fontSize: '12px',
                         fontWeight: 700,
-                        color: user.level === 1 ? '#FF1659' : '#ffffff',
-                        backgroundColor: user.level === 1 ? '#FFF0F4' : '#4CAF50',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        whiteSpace: 'nowrap',
+                        color: '#ffffff',
+                        backgroundColor: user.level === 1 ? '#FF1659' : '#4CAF50',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      {user.level === 1 ? '슈퍼어드민' : '어드민'}
+                      {user.level === 1 ? 'SA' : 'A'}
                     </span>
                   </td>
                   <td style={tdStyle}>
                     {/* 3개씩 2줄로 고르게 배치 */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px', minWidth: '300px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '5px', minWidth: '330px' }}>
                       {PERMISSION_TABS.map((tab) => {
                         const hasPermission = perms.includes(tab.key);
                         const isClickable = isSuper && user.level !== 1;
@@ -452,7 +468,7 @@ export default function AdminUsers({ currentAdmin }: { currentAdmin: CurrentAdmi
                               fontFamily: "'Pretendard', sans-serif",
                               fontSize: '12px',
                               fontWeight: 600,
-                              padding: '4px 6px',
+                              padding: '4px 4px',
                               borderRadius: '20px',
                               border: hasPermission ? '1px solid #FF1659' : '1px solid #E0E0E0',
                               backgroundColor: hasPermission ? '#FF1659' : 'transparent',

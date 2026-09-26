@@ -334,6 +334,19 @@ export default function AdminHome() {
     ? Number(heroEdits['veil_opacity'])
     : DEFAULT_VEIL;
 
+  // 히어로 글자 크기 (PC 100% 기준 px) — 휴대폰에서는 같은 비율로 자동 축소
+  const SIZE_FIELDS = [
+    { key: 'title_size', label: '큰 글씨(제목) 크기', def: 52, min: 28, max: 80 },
+    { key: 'desc_size',  label: '작은 글씨(설명) 크기', def: 18, min: 12, max: 30 },
+    { key: 'btn_size',   label: '수강 문의 버튼 크기', def: 16, min: 12, max: 28 },
+  ];
+
+  // 배경 작품 크기 (%) — 100이 기본
+  const DEFAULT_SCALE = 100;
+  const scaleValue = heroEdits['backdrop_scale']
+    ? Number(heroEdits['backdrop_scale'])
+    : DEFAULT_SCALE;
+
   return (
     <div>
       {/* 페이지 제목 + 모드 탭 */}
@@ -393,6 +406,40 @@ export default function AdminHome() {
             </div>
           ))}
 
+          {/* 글자 크기 (제목 · 설명 · 버튼) */}
+          {SIZE_FIELDS.map((f) => {
+            const value = heroEdits[f.key] ? Number(heroEdits[f.key]) : f.def;
+            return (
+              <div key={f.key}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{f.label}</label>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1A1A1A' }}>
+                      {value}px
+                    </span>
+                    {value !== f.def && (
+                      <button
+                        onClick={() => setHeroEdits((prev) => ({ ...prev, [f.key]: String(f.def) }))}
+                        style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                      >
+                        기본값({f.def})
+                      </button>
+                    )}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={f.min}
+                  max={f.max}
+                  step={1}
+                  value={value}
+                  onChange={(e) => setHeroEdits((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  style={{ width: '100%', accentColor: '#FF1659', cursor: 'pointer' }}
+                />
+              </div>
+            );
+          })}
+
           {/* 배경 작품 위에 덮는 테마 색의 진하기 */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -424,9 +471,41 @@ export default function AdminHome() {
               히어로 배경에 깔리는 갤러리 작품 위에 덮는 색입니다. 숫자가 클수록 작품이 옅게, 작을수록 진하게 보입니다. (0 = 작품 그대로)
             </p>
           </div>
+
+          {/* 배경 작품 크기 */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>배경 작품 크기</label>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1A1A1A' }}>
+                  {scaleValue}%
+                </span>
+                {scaleValue !== DEFAULT_SCALE && (
+                  <button
+                    onClick={() => setHeroEdits((prev) => ({ ...prev, backdrop_scale: String(DEFAULT_SCALE) }))}
+                    style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  >
+                    기본값({DEFAULT_SCALE})
+                  </button>
+                )}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={50}
+              max={250}
+              step={5}
+              value={scaleValue}
+              onChange={(e) => setHeroEdits((prev) => ({ ...prev, backdrop_scale: e.target.value }))}
+              style={{ width: '100%', accentColor: '#FF1659', cursor: 'pointer' }}
+            />
+            <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '11px', color: '#aaa', marginTop: '6px' }}>
+              히어로 배경에 깔리는 갤러리 작품의 크기입니다. 키우면 서로 겹칠 수 있는데, 작품이 불투명해서 겹쳐도 지저분해 보이지 않습니다.
+            </p>
+          </div>
         </div>
         {saveBtn(heroSaving, heroSaved, () =>
-          saveSection([...HERO_KEYS.map((k) => k.key), 'veil_opacity'], heroContents, heroEdits, 'hero', setHeroSaving, setHeroSaved, fetchHero)
+          saveSection([...HERO_KEYS.map((k) => k.key), ...SIZE_FIELDS.map((f) => f.key), 'veil_opacity', 'backdrop_scale'], heroContents, heroEdits, 'hero', setHeroSaving, setHeroSaved, fetchHero)
         )}
 
         <div style={{ borderTop: '1px solid #F0F0F0', marginTop: '24px', paddingTop: '24px' }}>

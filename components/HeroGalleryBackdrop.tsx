@@ -46,9 +46,11 @@ const SLOTS_FINE = [
 export default function HeroGalleryBackdrop({
   mode,
   veilOpacity,
+  backdropScale,
 }: {
   mode: string;
-  veilOpacity?: string; // 관리자(홈 관리)에서 정한 덮개 진하기 (%)
+  veilOpacity?: string;  // 관리자(홈 관리)에서 정한 덮개 진하기 (%)
+  backdropScale?: string; // 관리자에서 정한 작품 크기 (%, 100 = 기본)
 }) {
   const isAni = mode === 'ani';
   const [urls, setUrls] = useState<string[]>([]);
@@ -91,6 +93,12 @@ export default function HeroGalleryBackdrop({
   const rgb = isAni ? '255, 22, 89' : '41, 41, 41';
   const veil = `rgba(${rgb}, ${veilPercent / 100})`;
 
+  // 작품 크기 배율 (관리자에서 50~250% 조절, 없으면 100%)
+  const parsedScale = Number(backdropScale);
+  const scale = backdropScale && !Number.isNaN(parsedScale)
+    ? Math.min(250, Math.max(50, parsedScale)) / 100
+    : 1;
+
   return (
     <>
       <style>{`
@@ -128,7 +136,7 @@ export default function HeroGalleryBackdrop({
       >
         {urls.map((url, i) => {
           const slot = slots[i % slots.length];
-          const width = slot.width;
+          const width = Math.round(slot.width * scale);
           const height = Math.round(width / ratio);
           return (
             <div

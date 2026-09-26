@@ -20,6 +20,23 @@ function getVal(contents: ContentRow[], key: string, fallback: string): string {
   return contents.find((r) => r.key === key)?.value ?? fallback;
 }
 
+// PC(화면 100%) 기준 글자 크기 — 관리자 '홈 관리'에서 조절, 화면이 좁아지면 같은 비율로 줄어듦
+const DEFAULT_TITLE_SIZE = 52;
+const DEFAULT_DESC_SIZE = 18;
+const DEFAULT_BTN_SIZE = 16;
+
+// 기준 크기일 때 예전 값과 똑같이 보이도록 비율을 유지해서 계산
+function fluidSize(size: number, defaultSize: number, minRatio: number, vwAtDefault: number): string {
+  const min = Math.round(size * minRatio);
+  const vw = (vwAtDefault * size) / defaultSize;
+  return `clamp(${min}px, ${vw.toFixed(2)}vw, ${size}px)`;
+}
+
+function sizeOf(contents: ContentRow[], key: string, fallback: number): number {
+  const raw = Number(getVal(contents, key, ''));
+  return raw > 0 ? raw : fallback;
+}
+
 export default function HeroSection({ mode }: { mode: string }) {
   const [contents, setContents] = useState<ContentRow[]>([]);
   const [visible, setVisible] = useState(false);
@@ -71,6 +88,11 @@ useEffect(() => {
   const btnColor = isAni ? '#FF1659' : '#515883';
   // 관리자에서 사진을 바꾸면 주소 끝 번호가 바뀐 새 주소가 저장됨 (없으면 기존 파일)
   const charImg  = getVal(contents, 'image', `${IMG_BASE}/hero_img_${isAni ? 'ani' : 'fine'}.png`);
+
+  // 글자 크기 (관리자 '홈 관리 > 히어로 섹션'에서 조절)
+  const titleSize = sizeOf(contents, 'title_size', DEFAULT_TITLE_SIZE);
+  const descSize  = sizeOf(contents, 'desc_size',  DEFAULT_DESC_SIZE);
+  const btnSize   = sizeOf(contents, 'btn_size',   DEFAULT_BTN_SIZE);
 
   type FadeItem = {
     content: string;
@@ -136,7 +158,11 @@ useEffect(() => {
         }}
       >
         {/* 캐릭터 뒤에서 갤러리 작품이 천천히 떠다니는 배경 */}
-        <HeroGalleryBackdrop mode={mode} veilOpacity={getVal(contents, 'veil_opacity', '')} />
+        <HeroGalleryBackdrop
+          mode={mode}
+          veilOpacity={getVal(contents, 'veil_opacity', '')}
+          backdropScale={getVal(contents, 'backdrop_scale', '')}
+        />
 
         <div
           className="h-full flex relative"
@@ -170,9 +196,9 @@ useEffect(() => {
                       fontFamily: "'Pretendard', sans-serif",
                       fontWeight: 700,
                       marginTop: 'clamp(4px, 0.8vw, 12px)',
-                      padding: 'clamp(10px, 0.8vw, 14px) clamp(18px, 1.5vw, 28px)',
+                      padding: `${fluidSize(Math.round(btnSize * 0.875), 14, 0.714, 0.8)} ${fluidSize(Math.round(btnSize * 1.75), 28, 0.643, 1.5)}`,
                       color: btnColor,
-                      fontSize: 'clamp(13px, 0.85vw, 16px)',
+                      fontSize: fluidSize(btnSize, DEFAULT_BTN_SIZE, 0.8125, 0.85),
                     }}
                   >
                     {item.content}
@@ -183,7 +209,7 @@ useEffect(() => {
                     className="hero-title font-black text-white leading-snug whitespace-pre-line"
                     style={{
                       fontFamily: "'Pretendard', sans-serif",
-                      fontSize: 'clamp(24px, 2.8vw, 52px)',
+                      fontSize: fluidSize(titleSize, DEFAULT_TITLE_SIZE, 0.4615, 2.8),
                       // 배경 작품 위에서도 잘 읽히도록 은은한 그림자
                       textShadow: '0 2px 12px rgba(0,0,0,0.55)',
                     }}
@@ -193,10 +219,10 @@ useEffect(() => {
                 )}
                 {!item.isBtn && !item.isTitle && (
                   <p
-                    className="hero-desc text-white/80 leading-relaxed"
+                    className="hero-desc text-white leading-relaxed"
                     style={{
                       fontFamily: "'Pretendard', sans-serif",
-                      fontSize: 'clamp(12px, 0.9vw, 18px)',
+                      fontSize: fluidSize(descSize, DEFAULT_DESC_SIZE, 0.6667, 0.9),
                       textShadow: '0 1px 8px rgba(0,0,0,0.5)',
                     }}
                   >
