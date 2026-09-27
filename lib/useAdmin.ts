@@ -21,8 +21,10 @@ export type AdminStatus = 'checking' | 'signedOut' | 'denied' | 'ok';
 
 // 홈페이지 관리 탭 권한
 export const SITE_PERMS = ['design', 'lessons', 'gallery', 'board', 'blog', 'graduates'];
-// 통합 운영 시스템 권한 (관리자 관리 화면에서 같이 부여)
-export const SYSTEM_PERM = 'system';
+// 상담 관리 권한 (예전 이름은 '통합 운영' — 저장된 값은 'system' 그대로 사용)
+export const CONSULT_PERM = 'system';
+// 재원생 관리 권한
+export const STUDENTS_PERM = 'students';
 
 export function hasPerm(admin: CurrentAdmin | null, perm: string): boolean {
   if (!admin) return false;
@@ -35,8 +37,12 @@ export function canUseSite(admin: CurrentAdmin | null): boolean {
   return SITE_PERMS.some((p) => hasPerm(admin, p));
 }
 
-export function canUseSystem(admin: CurrentAdmin | null): boolean {
-  return hasPerm(admin, SYSTEM_PERM);
+export function canUseConsult(admin: CurrentAdmin | null): boolean {
+  return hasPerm(admin, CONSULT_PERM);
+}
+
+export function canUseStudents(admin: CurrentAdmin | null): boolean {
+  return hasPerm(admin, STUDENTS_PERM);
 }
 
 export function useAdmin() {

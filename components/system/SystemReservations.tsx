@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import DateTimePick, { monthsLaterStr } from '@/components/system/DateTimePick';
 
 interface Reservation {
   id: number;
@@ -15,6 +16,7 @@ interface Reservation {
   visitor_type: string | null;
   student_name: string;
   phone: string | null;
+  school: string | null;
   student_type: string | null;
   grade: number | null;
   age: number | null;
@@ -102,7 +104,7 @@ function toInputValue(value: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function SystemReservations() {
+export default function SystemReservations({ onHandOff }: { onHandOff?: (recordId: number, mode: string) => void }) {
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -191,6 +193,57 @@ export default function SystemReservations() {
     fetchItems();
   }
 
+  // 예약 내용을 그대로 상담 기록으로 옮기기
+  async function handOff(item: Reservation) {
+    // 이미 옮긴 적이 있으면 중복으로 만들지 않음 (같은 예약에서 여러 건이 생겼어도 첫 건으로 이동)
+    const { data: existing } = await supabase
+      .from('counsel_records')
+      .select('id')
+      .eq('from_reservation_id', item.id)
+      .order('id')
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      alert('이 예약은 이미 상담 기록으로 옮겼어요. 상담 기록 탭에서 확인해주세요.');
+      onHandOff?.(existing[0].id, item.mode ?? 'ani');
+      return;
+    }
+
+    if (!confirm(`${item.student_name} 님의 예약 내용을 상담 기록으로 옮길까요?\n\n예약 내용은 그대로 남고, 상담 기록이 새로 만들어져요.`)) return;
+
+    const purposeMap: Record<string, string> = { highschool: 'admission', university: 'admission', hobby: 'etc' };
+    const { data, error } = await supabase
+      .from('counsel_records')
+      .insert({
+        mode: item.mode ?? 'ani',
+        counseled_at: item.preferred_at ?? new Date().toISOString(),
+        student_name: item.student_name,
+        student_phone: item.phone,
+        school: item.school,
+        grade: item.grade ? `${item.grade}학년` : null,
+        age: item.age ?? null,
+        purpose: item.purpose ? purposeMap[item.purpose] ?? 'etc' : null,
+        counselor: item.assigned_to,
+        cause: item.memo ? `[신청 시 문의 내용]\n${item.memo}` : null,
+        from_reservation_id: item.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      alert('상담 기록 만들기 실패: ' + error.message);
+      return;
+    }
+
+    // 상담이 끝난 건으로 정리할지 물어봄
+    if (item.status !== 'done' && confirm('이 예약을 "상담 완료"로 바꿀까요?')) {
+      await supabase.from('consult_reservations').update({ status: 'done' }).eq('id', item.id);
+      fetchItems();
+    }
+
+    onHandOff?.(data.id, item.mode ?? 'ani');
+  }
+
   // 엑셀에서 열 수 있는 CSV 로 내려받기 (백업 겸 보고용)
   function handleExport() {
     const header = ['신청일', '구분', '이름', '연락처', '학생구분', '목적', '분야', '보호자', '관계', '보호자 연락처', '희망일시', '경로', '상태', '담당', '문의내용'];
@@ -226,6 +279,18 @@ export default function SystemReservations() {
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.status === filter);
   const counts = STATUS.map((s) => ({ ...s, n: items.filter((i) => i.status === s.key).length }));
+
+  // 아직 시간이 지나지 않은 예약(대기·확정)은 맨 위에 고정, 시간이 지나면 아래 목록으로 내려감
+  const isUpcoming = (i: Reservation) =>
+    !!i.preferred_at &&
+    new Date(i.preferred_at).getTime() > Date.now() &&
+    (i.status === 'new' || i.status === 'confirmed');
+
+  // 상담 날짜가 늦은(먼) 예약부터 위에 — 방금 잡은 예약이 잘 보이도록
+  const upcoming = filtered
+    .filter(isUpcoming)
+    .sort((a, b) => new Date(b.preferred_at!).getTime() - new Date(a.preferred_at!).getTime());
+  const others = filtered.filter((i) => !isUpcoming(i));
 
   const inputStyle: React.CSSProperties = {
     padding: '9px 12px', border: '1px solid #E0E0E0', borderRadius: '8px',
@@ -423,16 +488,17 @@ export default function SystemReservations() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {filtered.map((item) => {
+        {[...upcoming, ...others].map((item) => {
           const s = statusOf(item.status);
           const open = openId === item.id;
           const enrolled = item.visitor_type === 'enrolled';
+          const pinned = isUpcoming(item); // 아직 오지 않은 예약 (맨 위 고정)
           return (
             <div
               key={item.id}
               style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid ' + (open ? s.color : '#E0E0E0'),
+                backgroundColor: pinned ? '#FFFDF2' : '#ffffff',
+                border: '1px solid ' + (open ? s.color : pinned ? '#E8C766' : '#E0E0E0'),
                 borderRadius: '12px',
                 overflow: 'hidden',
                 transition: 'border-color 0.15s',
@@ -447,6 +513,7 @@ export default function SystemReservations() {
                   cursor: 'pointer', textAlign: 'left', flexWrap: 'wrap',
                 }}
               >
+                {/* 아직 오지 않은 예약은 연노란 배경으로만 구분 (배지는 상태만) */}
                 <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 700, color: s.color, backgroundColor: s.bg, padding: '4px 12px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
                   {s.label}
                 </span>
@@ -455,6 +522,10 @@ export default function SystemReservations() {
                 </span>
                 <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 600, color: enrolled ? '#2E7D32' : '#888', backgroundColor: enrolled ? '#E8F5E9' : '#F5F5F5', padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
                   {visitorLabel(item)}
+                </span>
+                {/* 펼치지 않아도 애니·회화를 구분할 수 있도록 */}
+                <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', fontWeight: 700, color: item.mode === 'fine' ? '#515883' : '#FF1659', backgroundColor: item.mode === 'fine' ? '#ECEEF5' : '#FFF0F4', padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
+                  {item.mode === 'fine' ? '회화' : '애니'}
                 </span>
                 <span style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '13px', color: '#555' }}>
                   {item.phone ?? '연락처 없음'}
@@ -531,14 +602,12 @@ export default function SystemReservations() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                     <div>
                       <span style={fieldLabel}>희망 상담 일시</span>
-                      <input
-                        type="datetime-local"
-                        defaultValue={toInputValue(item.preferred_at)}
-                        onBlur={(e) => {
-                          const next = e.target.value ? new Date(e.target.value).toISOString() : null;
-                          if (next !== item.preferred_at) updateItem(item, { preferred_at: next });
-                        }}
-                        style={{ ...inputStyle, width: '100%' }}
+                      {/* 30분 단위, 오전 10시~오후 9시 (사이트 전체 공통) */}
+                      <DateTimePick
+                        value={item.preferred_at}
+                        onChange={(iso) => { if (iso !== item.preferred_at) updateItem(item, { preferred_at: iso }); }}
+                        max={monthsLaterStr(6)}
+                        inputStyle={inputStyle}
                       />
                     </div>
                     <div>
@@ -599,12 +668,12 @@ export default function SystemReservations() {
                       칸을 고치고 다른 곳을 클릭하면 저장돼요.
                     </p>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {/* 상담 기록 기능을 만들 때 이 버튼에서 바로 기록이 생성되도록 연결 예정 */}
+                      {/* 이 예약 내용을 그대로 상담 기록으로 옮김 */}
                       <button
-                        onClick={() => alert('상담 기록 기능을 만들면, 이 버튼으로 이 예약이 상담 기록 맨 위에 자동으로 추가돼요.\n지금은 준비 중이에요.')}
-                        style={{ ...btnStyle, backgroundColor: '#ffffff', color: '#555', border: '1px solid #E0E0E0', fontSize: '12px', padding: '6px 14px' }}
+                        onClick={() => handOff(item)}
+                        style={{ ...btnStyle, backgroundColor: '#FF1659', color: '#ffffff', fontSize: '12px', padding: '6px 14px' }}
                       >
-                        상담 기록으로 넘기기 (준비 중)
+                        상담 기록으로 넘기기
                       </button>
                       <button
                         onClick={() => handleDelete(item)}

@@ -1,12 +1,12 @@
 // 어드민 선택 화면
-// 이유: 로그인 후 '라인아트 통합 운영 시스템'과 '홈페이지 관리' 중에서 고르도록
+// 이유: 로그인 후 상담 관리 / 재원생 관리 / 홈페이지 관리 / 관리자 관리 중에서 고르도록
 //       (권한은 관리자 관리 화면에서 사람마다 부여 — 명단은 하나로 관리)
 
 'use client';
 
 import { useRouter } from 'next/navigation';
 import AdminGate from '@/components/admin/AdminGate';
-import { useAdmin, canUseSite, canUseSystem } from '@/lib/useAdmin';
+import { useAdmin, canUseSite, canUseConsult, canUseStudents } from '@/lib/useAdmin';
 
 export default function AdminHubPage() {
   const router = useRouter();
@@ -24,11 +24,12 @@ export default function AdminHubPage() {
     );
   }
 
-  const systemAllowed = canUseSystem(admin);
+  const consultAllowed = canUseConsult(admin);
+  const studentsAllowed = canUseStudents(admin);
   const siteAllowed = canUseSite(admin);
 
   const cardBase: React.CSSProperties = {
-    flex: '1 1 300px',
+    // 카드는 개수와 상관없이 항상 같은 크기 (앞으로 카드가 늘어도 동일)
     minWidth: 0,
     borderRadius: '16px',
     padding: '32px 28px',
@@ -123,14 +124,22 @@ export default function AdminHubPage() {
         <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '15px', color: '#555', marginBottom: '24px' }}>
           어디로 들어갈까요?
         </p>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', alignItems: 'stretch' }}>
           {card({
-            title: '라인아트 통합 운영 시스템',
-            desc: '학원 운영에 필요한 기능을 모아둔 곳이에요.',
-            items: '상담예약 관리 · 상담 기록 · 재원생 관리 · 입시 데이터 분석',
+            title: '상담 관리',
+            desc: '상담 신청을 확인하고 상담 내용을 남기는 곳이에요.',
+            items: '상담 예약 · 상담 기록',
             color: '#FF1659',
-            allowed: systemAllowed,
-            href: '/admin/system',
+            allowed: consultAllowed,
+            href: '/admin/consult',
+          })}
+          {card({
+            title: '재원생 관리',
+            desc: '다니고 있는 학생과 입시 데이터를 관리하는 곳이에요.',
+            items: '재원생 명단 · 입시 데이터 분석 · 학생별 큐레이팅',
+            color: '#515883',
+            allowed: studentsAllowed,
+            href: '/admin/students',
           })}
           {card({
             title: '홈페이지 관리',
@@ -151,7 +160,7 @@ export default function AdminHubPage() {
           })}
         </div>
 
-        {!systemAllowed && !siteAllowed && (
+        {!consultAllowed && !studentsAllowed && !siteAllowed && admin.level !== 1 && (
           <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '14px', color: '#888', marginTop: '28px' }}>
             아직 부여된 권한이 없어요. 슈퍼어드민에게 문의해주세요.
           </p>

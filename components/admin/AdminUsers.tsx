@@ -1,5 +1,5 @@
 // AdminUsers 수정
-// 이유: 접속 코드 → 구글 이메일 등록 방식, 직책 추가, 관리자 관리는 슈퍼어드민 전용
+// 이유: 로그인 후 상담 관리 / 재원생 관리 / 홈페이지 관리 / 관리자 관리 중에서 고르도록
 // 실제 수정 권한은 Supabase 보안 규칙(슈퍼어드민만 admin_users 수정 가능)이 막습니다.
 
 'use client';
@@ -27,7 +27,8 @@ const PERMISSION_TABS = [
   { key: 'board',     label: '문의·게시판' },
   { key: 'blog',      label: '블로그' },
   { key: 'graduates', label: '합격자' },
-  { key: 'system',    label: '통합 운영' },
+  { key: 'system',    label: '상담 관리' },
+  { key: 'students',  label: '재원생 관리' },
 ];
 
 const ROLE_OPTIONS = ['원장', '부원장', '전임', '준전임', '보조'];

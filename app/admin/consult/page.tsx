@@ -1,4 +1,4 @@
-// 라인아트 통합 운영 시스템
+// 상담 관리
 // 이유: 선택 화면에서 들어오는 자리. 기능을 하나씩 추가하는 중
 // ※ 학생 개인정보를 다루므로, 새 표를 만들 때 RLS 규칙을 반드시 같이 작성할 것
 
@@ -7,21 +7,20 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminGate from '@/components/admin/AdminGate';
-import { useAdmin, canUseSystem } from '@/lib/useAdmin';
+import { useAdmin, canUseConsult } from '@/lib/useAdmin';
 import SystemReservations from '@/components/system/SystemReservations';
+import SystemCounselRecords from '@/components/system/SystemCounselRecords';
 
 const MENU = [
-  { key: 'reservations', label: '상담예약 관리', ready: true },
-  { key: 'records',      label: '상담 기록',     ready: false },
-  { key: 'students',     label: '재원생 관리',   ready: false },
-  { key: 'analysis',     label: '입시 데이터',   ready: false },
-  { key: 'curation',     label: '학생별 큐레이팅', ready: false },
+  { key: 'reservations', label: '상담 예약', ready: true },
+  { key: 'records',      label: '상담 기록', ready: true },
 ];
 
-export default function AdminSystemPage() {
+export default function AdminConsultPage() {
   const router = useRouter();
   const { admin, status, deniedEmail, error, login, logout } = useAdmin();
   const [menu, setMenu] = useState('reservations');
+  const [focusRecordId, setFocusRecordId] = useState<number | null>(null);
 
   if (status !== 'ok' || !admin) {
     return (
@@ -35,13 +34,13 @@ export default function AdminSystemPage() {
     );
   }
 
-  if (!canUseSystem(admin)) {
+  if (!canUseConsult(admin)) {
     return (
       <AdminGate
         status={status}
         onLogin={login}
         onLogout={logout}
-        notice="통합 운영 시스템 권한이 없어요."
+        notice="상담 관리 권한이 없어요."
       />
     );
   }
@@ -53,7 +52,7 @@ export default function AdminSystemPage() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px', padding: '24px 0', flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '24px', fontWeight: 900, color: '#1A1A1A', marginBottom: '2px' }}>
-              라인아트 통합 운영 시스템
+              상담 관리
             </h1>
             <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '12px', color: '#888' }}>
               {admin.email}
@@ -104,8 +103,11 @@ export default function AdminSystemPage() {
 
       {/* 내용 */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        {menu === 'reservations' && <SystemReservations />}
-        {menu !== 'reservations' && (
+        {menu === 'reservations' && (
+          <SystemReservations onHandOff={(recordId) => { setFocusRecordId(recordId); setMenu('records'); }} />
+        )}
+        {menu === 'records' && <SystemCounselRecords focusId={focusRecordId} />}
+        {menu !== 'reservations' && menu !== 'records' && (
           <div style={{ backgroundColor: '#ffffff', border: '1px solid #E0E0E0', borderRadius: '12px', padding: '40px', textAlign: 'center' }}>
             <p style={{ fontFamily: "'Pretendard', sans-serif", fontSize: '15px', fontWeight: 700, color: '#1A1A1A', marginBottom: '8px' }}>
               아직 준비 중인 기능이에요
